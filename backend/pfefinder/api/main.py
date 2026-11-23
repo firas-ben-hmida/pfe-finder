@@ -1,3 +1,5 @@
+import logging
+
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
@@ -9,6 +11,12 @@ from pfefinder.api.rate_limit import limiter
 from pfefinder.api.routes import health, matching, subjects
 from pfefinder.config.settings import get_settings
 from pfefinder.common.errors import UpstreamError
+
+logging.getLogger("pfefinder").setLevel(logging.INFO)  # chronométrage des étapes du matching
+if not logging.getLogger("pfefinder").handlers:
+    _h = logging.StreamHandler()
+    _h.setFormatter(logging.Formatter("%(levelname)s:     %(message)s"))
+    logging.getLogger("pfefinder").addHandler(_h)
 
 app = FastAPI(title="PFE Finder API", version="0.1.0")
 app.state.limiter = limiter
