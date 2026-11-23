@@ -38,6 +38,10 @@ def match(profile: Profile, cv_text: str = "") -> list[SubjectSummary]:
     docs = [d for d in SubjectRetriever(top_k=settings.matching_top_k).invoke(query)
             if (d.metadata.get("similarity") or 0) >= settings.matching_min_score]
     log.info("Recherche vectorielle : %d sujets en %.1f s", len(docs), time.perf_counter() - start)
+    for rank, d in list(enumerate(docs, 1))[:5] + list(enumerate(docs, 1))[-2:]:
+        log.info("  #%d  score=%.3f  %s | %s", rank, d.metadata.get("similarity") or 0,
+                 d.metadata.get("entreprise", "")[:12], d.metadata.get("titre", "")[:70])
+    log.info("Requête de recherche (%d car.) : %s", len(query), query[:300].replace("\n", " ; "))
     if not docs:
         return []
 
