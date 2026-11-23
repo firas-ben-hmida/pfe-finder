@@ -20,4 +20,4 @@ async def match_cv(request: Request, file: UploadFile) -> list[SubjectSummary]:
         text = cv_text_extractor.extract_text(data)
     except ValueError as exc:
         raise HTTPException(422, str(exc)) from exc
-    return matching_service.match(matching_service.extract_profile(text))
+    return matching_service.match(matching_service.extract_profile(text), text)

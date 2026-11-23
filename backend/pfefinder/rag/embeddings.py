@@ -1,4 +1,5 @@
 """Embeddings Gemini (768 dimensions) : le même modèle indexe les sujets et encode les requêtes."""
+import logging
 from functools import lru_cache
 
 from google import genai
@@ -7,6 +8,9 @@ from langchain_core.embeddings import Embeddings
 
 from pfefinder.common.errors import UpstreamError
 from pfefinder.config.settings import get_settings
+
+
+log = logging.getLogger(__name__)
 
 
 class GeminiEmbeddings(Embeddings):
@@ -29,6 +33,7 @@ class GeminiEmbeddings(Embeddings):
                 )
                 vectors.extend(list(e.values) for e in result.embeddings)
         except Exception as exc:
+            log.error("Échec embeddings (%d textes, %d caractères) : %s", len(texts), sum(map(len, texts)), exc)
             raise UpstreamError("Échec de l'API d'embeddings.") from exc
         return vectors
 

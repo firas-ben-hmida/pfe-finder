@@ -18,9 +18,12 @@ def extract_profile(cv_text: str) -> Profile:
         raise UpstreamError("Échec de l'analyse du CV.") from exc
 
 
-def match(profile: Profile) -> list[SubjectSummary]:
+def match(profile: Profile, cv_text: str = "") -> list[SubjectSummary]:
     """RAG : retrieve (pgvector) puis le LLM justifie uniquement à partir des sujets récupérés."""
-    docs = SubjectRetriever(top_k=get_settings().matching_top_k).invoke(profile_query(profile))
+    query = profile_query(profile).strip() or cv_text[:4000].strip()  # profil vide : on cherche avec le texte du CV
+    if not query:
+        return []
+    docs = SubjectRetriever(top_k=get_settings().matching_top_k).invoke(query)
     if not docs:
         return []
 
