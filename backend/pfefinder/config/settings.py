@@ -12,7 +12,7 @@ class Settings(BaseSettings):
     supabase_key: str  # clé service_role : uniquement côté serveur
     google_api_key: str
 
-    llm_model: str = "gemini-2.5-flash"
+    llm_model: str = "gemini-3.8-flash"
     embedding_model: str = "gemini-embedding-001"
     embedding_dim: int = 768
 
