@@ -1,0 +1,28 @@
+# Secrets
+.env
+.env.*
+!.env.example
+
+# Python
+.venv/
+venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# Node / Angular
+node_modules/
+dist/
+.angular/
+
+# Données : ne jamais versionner les PFE books (droits des entreprises) ni les CV
+*.pdf
+data/
+
+# Éditeurs / système
+.idea/
+.vscode/
+.DS_Store
+Thumbs.db
