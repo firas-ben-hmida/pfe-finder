@@ -16,3 +16,8 @@ def test_limite_le_nombre_de_sujets_par_entreprise():
 def test_respecte_k_et_l_ordre():
     docs = [_doc("A", 1), _doc("B", 2), _doc("A", 3)]
     assert [d.metadata["id"] for d in diversify(docs, k=2)] == [1, 2]
+
+
+def test_le_plafond_suit_la_taille_de_la_liste():
+    docs = [_doc(c, i) for i in range(12) for c in "ABC"]
+    assert len(diversify(docs, k=30)) == 30

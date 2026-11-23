@@ -16,9 +16,11 @@ def profile_query(profile: Profile) -> str:
     return "\n".join(p for p in parts if p)
 
 
-def diversify(docs: list, k: int, max_per_company: int = 3) -> list:
+def diversify(docs: list, k: int, max_per_company: int | None = None) -> list:
     """Garde l'ordre de pertinence mais limite le nombre de sujets par entreprise,
     pour que le classement ne soit pas monopolisé par un seul PFE book."""
+    if max_per_company is None:
+        max_per_company = max(3, -(-k * 2 // 5))  # ~40 % de la liste : k=8 -> 4, k=30 -> 12
     counts: dict[str, int] = {}
     picked = []
     for d in docs:
