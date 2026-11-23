@@ -1,7 +1,7 @@
 """Exécution quotidienne : expiration -> découverte (agent) -> traitement de la file (code).
 
-    python -m pfefinder.agent.run            # tout
-    python -m pfefinder.agent.run --no-discovery
+    python -m pfefinder.agent.daily_run            # tout
+    python -m pfefinder.agent.daily_run --no-discovery
 """
 import argparse
 import logging
@@ -10,13 +10,14 @@ import time
 import requests
 
 from pfefinder.agent import guardrails as g
-from pfefinder.agent.graph import build_agent
-from pfefinder.agent.tools import fetch_pdfs_from_source, reset_quotas
-from pfefinder.core.config import get_settings
-from pfefinder.core.dates import target_year
-from pfefinder.core.db import documents
-from pfefinder.ingestion.expiry import run_expiry
-from pfefinder.ingestion.pipeline import ingest_pdf
+from pfefinder.agent.discovery_agent import build_agent
+from pfefinder.agent.discovery_tools import reset_quotas
+from pfefinder.agent.source_fetcher import fetch_pdfs_from_source
+from pfefinder.config.settings import get_settings
+from pfefinder.common.academic_year import target_year
+from pfefinder.repositories import documents_repository as documents
+from pfefinder.rag.ingestion.subject_expiry import run_expiry
+from pfefinder.rag.ingestion.ingestion_pipeline import ingest_pdf
 
 log = logging.getLogger("agent")
 

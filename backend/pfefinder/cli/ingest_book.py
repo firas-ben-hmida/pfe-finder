@@ -1,14 +1,14 @@
 """Ingestion manuelle (tests locaux) :
 
-    python -m pfefinder.ingestion.cli fichier.pdf --url https://site.tn/pfe-book-2027.pdf
-    python -m pfefinder.ingestion.cli --expire
+    python -m pfefinder.cli.ingest_book fichier.pdf --url https://site.tn/pfe-book-2027.pdf
+    python -m pfefinder.cli.ingest_book --expire
 """
 import argparse
 import logging
 from pathlib import Path
 
-from pfefinder.ingestion.expiry import run_expiry
-from pfefinder.ingestion.pipeline import ingest_pdf
+from pfefinder.rag.ingestion.subject_expiry import run_expiry
+from pfefinder.rag.ingestion.ingestion_pipeline import ingest_pdf
 
 
 def main() -> None:

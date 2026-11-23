@@ -1,4 +1,4 @@
-from pfefinder.core.hashing import hash_sujet, normalize_url
+from pfefinder.common.fingerprints import hash_sujet, normalize_url
 
 
 def test_hash_ignores_case_and_spaces():

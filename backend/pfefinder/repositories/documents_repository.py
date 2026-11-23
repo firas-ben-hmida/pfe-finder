@@ -1,7 +1,7 @@
 """Mémoire de l'agent : documents déjà traités et sources à traiter (jamais deux fois le même PDF)."""
 from typing import Any
 
-from pfefinder.core.db.client import get_db
+from pfefinder.repositories.supabase_client import get_db
 
 
 def is_known(url_normalisee: str | None = None, hash_fichier: str | None = None) -> bool:

@@ -5,14 +5,15 @@ C'est le seul chemin d'écriture dans la table sujets (utilisé par le CLI et pa
 import logging
 from dataclasses import dataclass
 
-from pfefinder.core.chains import extract_chain
-from pfefinder.core.config import get_settings
-from pfefinder.core.db import documents, subjects
-from pfefinder.core.hashing import normalize_url, sha256_bytes
-from pfefinder.core.llm import get_embeddings
-from pfefinder.core.retriever import subject_text
-from pfefinder.ingestion import rules
-from pfefinder.ingestion.pdf_reader import read_pdf
+from pfefinder.rag.ingestion.subject_extractor import extract_chain
+from pfefinder.config.settings import get_settings
+from pfefinder.repositories import documents_repository as documents
+from pfefinder.repositories import subjects_repository as subjects
+from pfefinder.common.fingerprints import normalize_url, sha256_bytes
+from pfefinder.rag.embeddings import get_embeddings
+from pfefinder.rag.indexing.subject_text import subject_text
+from pfefinder.rag.ingestion import validation_rules as rules
+from pfefinder.rag.ingestion.pdf_loader import read_pdf
 
 log = logging.getLogger(__name__)
 CHUNK_CHARS = 60_000  # un catalogue long est découpé en blocs envoyés séparément au LLM

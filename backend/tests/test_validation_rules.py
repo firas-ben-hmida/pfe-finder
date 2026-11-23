@@ -1,7 +1,7 @@
 from datetime import date
 
-from pfefinder.core.schemas import ExtractedBook, ExtractedSubject
-from pfefinder.ingestion.rules import decide_status
+from pfefinder.domain.models import ExtractedBook, ExtractedSubject
+from pfefinder.rag.ingestion.validation_rules import decide_status
 
 TODAY = date(2026, 11, 23)
 

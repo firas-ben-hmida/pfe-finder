@@ -1,9 +1,9 @@
 from langgraph.prebuilt import create_react_agent
 
-from pfefinder.agent.tools import search_pfe_books, submit_source
-from pfefinder.core import prompts
-from pfefinder.core.dates import target_year
-from pfefinder.core.llm import get_llm
+from pfefinder.agent.discovery_tools import search_pfe_books, submit_source
+from pfefinder.rag import prompts
+from pfefinder.common.academic_year import target_year
+from pfefinder.rag.chat_model import get_llm
 
 
 def build_agent():

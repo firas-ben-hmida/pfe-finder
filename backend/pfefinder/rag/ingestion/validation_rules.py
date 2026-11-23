@@ -2,9 +2,9 @@
 from datetime import date
 from typing import Any
 
-from pfefinder.core.dates import is_expired, target_year
-from pfefinder.core.hashing import hash_sujet
-from pfefinder.core.schemas import ExtractedBook, ExtractedSubject
+from pfefinder.common.academic_year import is_expired, target_year
+from pfefinder.common.fingerprints import hash_sujet
+from pfefinder.domain.models import ExtractedBook, ExtractedSubject
 
 TUNISIAN_CITIES = {
     "tunis", "ariana", "ben arous", "manouba", "la marsa", "lac", "les berges du lac", "sousse", "sfax",

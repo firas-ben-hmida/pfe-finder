@@ -2,7 +2,7 @@ from functools import lru_cache
 
 from supabase import Client, create_client
 
-from pfefinder.core.config import get_settings
+from pfefinder.config.settings import get_settings
 
 
 @lru_cache

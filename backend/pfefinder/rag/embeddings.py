@@ -1,13 +1,12 @@
-"""Modèles LangChain : LLM Gemini et embeddings Gemini (même modèle partout)."""
+"""Embeddings Gemini (768 dimensions) : le même modèle indexe les sujets et encode les requêtes."""
 from functools import lru_cache
 
 from google import genai
 from google.genai import types
 from langchain_core.embeddings import Embeddings
-from langchain_google_genai import ChatGoogleGenerativeAI
 
-from pfefinder.core.config import get_settings
-from pfefinder.core.errors import UpstreamError
+from pfefinder.common.errors import UpstreamError
+from pfefinder.config.settings import get_settings
 
 
 class GeminiEmbeddings(Embeddings):
@@ -44,9 +43,3 @@ class GeminiEmbeddings(Embeddings):
 def get_embeddings() -> GeminiEmbeddings:
     s = get_settings()
     return GeminiEmbeddings(s.google_api_key, s.embedding_model, s.embedding_dim)
-
-
-@lru_cache
-def get_llm() -> ChatGoogleGenerativeAI:
-    s = get_settings()
-    return ChatGoogleGenerativeAI(model=s.llm_model, google_api_key=s.google_api_key, temperature=0, max_retries=3)

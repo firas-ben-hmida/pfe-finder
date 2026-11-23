@@ -1,7 +1,7 @@
 from datetime import date
 
-from pfefinder.core.dates import target_year
-from pfefinder.core.db import subjects
+from pfefinder.common.academic_year import target_year
+from pfefinder.repositories import subjects_repository as subjects
 
 
 def run_expiry(today: date | None = None) -> int:

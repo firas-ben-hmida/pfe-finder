@@ -2,9 +2,10 @@
 
     python -m scripts.check_connection
 """
-from pfefinder.core.config import get_settings
-from pfefinder.core.db.client import get_db
-from pfefinder.core.llm import get_embeddings, get_llm
+from pfefinder.config.settings import get_settings
+from pfefinder.repositories.supabase_client import get_db
+from pfefinder.rag.chat_model import get_llm
+from pfefinder.rag.embeddings import get_embeddings
 
 settings = get_settings()
 rows = get_db().table("sujets").select("id").limit(1).execute().data

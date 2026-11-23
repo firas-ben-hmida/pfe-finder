@@ -12,12 +12,15 @@ Dépose ton CV, reçois les sujets de PFE tunisiens qui te correspondent, avec l
 
 | Dossier | Rôle |
 |---|---|
-| `backend/pfefinder/core` | config, schémas, prompts, LangChain, accès Supabase |
+| `backend/pfefinder/rag` | le RAG : ingestion, indexation, retrieval, génération |
+| `backend/pfefinder/repositories` | accès à Supabase |
 | `backend/pfefinder/api` | API FastAPI (`/api/match`, `/api/subjects/{id}`, `/api/subjects/{id}/apply`) |
-| `backend/pfefinder/ingestion` | pipeline PDF -> base, CLI, expiration |
 | `backend/pfefinder/agent` | agent LangGraph, garde-fous, `domains.json` |
+| `backend/pfefinder/cli` | ingestion manuelle d'un PDF |
 | `database` | scripts SQL à exécuter dans l'ordre |
-| `frontend` | Angular (à créer) |
+| `frontend` | Angular (upload, résultats, détail) |
+
+Détail du pipeline et correspondance avec les étapes d'un RAG : [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md).
 
 ## Démarrage local
 
@@ -33,10 +36,10 @@ Dépose ton CV, reçois les sujets de PFE tunisiens qui te correspondent, avec l
    ```
 3. Ingérer un PFE book :
    ```bash
-   python -m pfefinder.ingestion.cli mon-book.pdf --url https://site.tn/mon-book.pdf
+   python -m pfefinder.cli.ingest_book mon-book.pdf --url https://site.tn/mon-book.pdf
    ```
 4. API : `uvicorn pfefinder.api.main:app --reload` puis http://localhost:8000/docs (essayer `POST /api/match` avec un CV PDF).
-5. Agent : `python -m pfefinder.agent.run` (nécessite `GOOGLE_CSE_ID` / `GOOGLE_CSE_KEY` pour la recherche web ; sinon utiliser `--no-discovery` pour seulement traiter la file).
+5. Agent : `python -m pfefinder.agent.daily_run` (nécessite `GOOGLE_CSE_ID` / `GOOGLE_CSE_KEY` pour la recherche web ; sinon utiliser `--no-discovery` pour seulement traiter la file).
 
 ## Respect des sources
 

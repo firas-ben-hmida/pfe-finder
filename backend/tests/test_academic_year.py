@@ -1,6 +1,6 @@
 from datetime import date
 
-from pfefinder.core.dates import is_expired, target_year
+from pfefinder.common.academic_year import is_expired, target_year
 
 
 def test_target_year_before_september():

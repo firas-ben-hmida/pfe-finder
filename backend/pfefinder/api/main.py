@@ -7,8 +7,8 @@ from slowapi.middleware import SlowAPIMiddleware
 
 from pfefinder.api.rate_limit import limiter
 from pfefinder.api.routes import health, matching, subjects
-from pfefinder.core.config import get_settings
-from pfefinder.core.errors import UpstreamError
+from pfefinder.config.settings import get_settings
+from pfefinder.common.errors import UpstreamError
 
 app = FastAPI(title="PFE Finder API", version="0.1.0")
 app.state.limiter = limiter

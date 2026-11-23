@@ -1,7 +1,7 @@
 from fastapi import APIRouter, HTTPException
 
-from pfefinder.core.db import subjects as subjects_repo
-from pfefinder.core.schemas import ApplyInfo, SubjectDetail
+from pfefinder.repositories import subjects_repository as subjects_repo
+from pfefinder.domain.models import ApplyInfo, SubjectDetail
 
 router = APIRouter(prefix="/subjects", tags=["subjects"])
 

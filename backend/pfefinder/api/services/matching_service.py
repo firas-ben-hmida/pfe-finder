@@ -1,8 +1,8 @@
-from pfefinder.core.chains import profile_chain, reason_chain
-from pfefinder.core.config import get_settings
-from pfefinder.core.errors import UpstreamError
-from pfefinder.core.retriever import SubjectRetriever
-from pfefinder.core.schemas import Profile, SubjectSummary
+from pfefinder.rag.generation.matching_chains import profile_chain, reason_chain
+from pfefinder.config.settings import get_settings
+from pfefinder.common.errors import UpstreamError
+from pfefinder.rag.retrieval.subject_retriever import SubjectRetriever
+from pfefinder.domain.models import Profile, SubjectSummary
 
 
 def profile_query(profile: Profile) -> str:

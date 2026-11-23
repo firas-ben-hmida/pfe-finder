@@ -2,7 +2,7 @@ import pytest
 
 fitz = pytest.importorskip("fitz")
 
-from pfefinder.api.services.cv_parser import extract_text  # noqa: E402
+from pfefinder.api.services.cv_text_extractor import extract_text  # noqa: E402
 
 
 def test_rejects_non_pdf():

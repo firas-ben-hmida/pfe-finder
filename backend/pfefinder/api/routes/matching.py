@@ -1,9 +1,9 @@
 from fastapi import APIRouter, HTTPException, Request, UploadFile
 
 from pfefinder.api.rate_limit import limiter
-from pfefinder.api.services import cv_parser, matching
-from pfefinder.core.config import get_settings
-from pfefinder.core.schemas import SubjectSummary
+from pfefinder.api.services import cv_text_extractor, matching_service
+from pfefinder.config.settings import get_settings
+from pfefinder.domain.models import SubjectSummary
 
 router = APIRouter(tags=["matching"])
 
@@ -17,7 +17,7 @@ async def match_cv(request: Request, file: UploadFile) -> list[SubjectSummary]:
     if len(data) > max_bytes:
         raise HTTPException(413, "Fichier trop volumineux.")
     try:
-        text = cv_parser.extract_text(data)
+        text = cv_text_extractor.extract_text(data)
     except ValueError as exc:
         raise HTTPException(422, str(exc)) from exc
-    return matching.match(matching.extract_profile(text))
+    return matching_service.match(matching_service.extract_profile(text))

@@ -1,8 +1,8 @@
 from datetime import date
 from typing import Any
 
-from pfefinder.core.db.client import get_db
-from pfefinder.core.errors import UpstreamError
+from pfefinder.repositories.supabase_client import get_db
+from pfefinder.common.errors import UpstreamError
 
 SUMMARY_FIELDS = "id,entreprise,titre,technos,ville,pays,annee"
 

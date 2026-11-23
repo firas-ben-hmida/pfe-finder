@@ -1,10 +1,10 @@
-"""Chaînes LCEL : extraction de profil, justification du matching, extraction d'un PFE book."""
+"""Chaînes LCEL du matching : CV -> profil, puis justification des sujets récupérés."""
 from langchain_core.prompts import ChatPromptTemplate
 from pydantic import BaseModel, Field
 
-from pfefinder.core import prompts
-from pfefinder.core.llm import get_llm
-from pfefinder.core.schemas import ExtractedBook, Profile
+from pfefinder.domain.models import Profile
+from pfefinder.rag import prompts
+from pfefinder.rag.chat_model import get_llm
 
 
 class SubjectReason(BaseModel):
@@ -24,8 +24,3 @@ def profile_chain():
 def reason_chain():
     prompt = ChatPromptTemplate.from_messages([("system", prompts.REASON_SYSTEM), ("human", prompts.REASON_HUMAN)])
     return prompt | get_llm().with_structured_output(Reasons)
-
-
-def extract_chain():
-    prompt = ChatPromptTemplate.from_messages([("system", prompts.EXTRACT_SYSTEM), ("human", prompts.EXTRACT_HUMAN)])
-    return prompt | get_llm().with_structured_output(ExtractedBook)

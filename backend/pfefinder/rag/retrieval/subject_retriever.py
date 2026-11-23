@@ -1,19 +1,11 @@
-from typing import Any
-
 from langchain_core.callbacks import CallbackManagerForRetrieverRun
 from langchain_core.documents import Document
 from langchain_core.retrievers import BaseRetriever
 from pydantic import ConfigDict
 
-from pfefinder.core.db import subjects as subjects_repo
-from pfefinder.core.llm import get_embeddings
-
-
-def subject_text(row: dict[str, Any]) -> str:
-    """Texte indexé pour un sujet (un chunk = un sujet entier)."""
-    technos = ", ".join(row.get("technos") or [])
-    return (f"{row.get('titre', '')}\nEntreprise : {row.get('entreprise', '')}\n"
-            f"Technologies : {technos}\n{row.get('description') or ''}").strip()
+from pfefinder.rag.embeddings import get_embeddings
+from pfefinder.rag.indexing.subject_text import subject_text
+from pfefinder.repositories import subjects_repository as subjects_repo
 
 
 class SubjectRetriever(BaseRetriever):
