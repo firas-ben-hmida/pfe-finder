@@ -61,7 +61,9 @@ def store_books(books: list[ExtractedBook], source_url: str, url_norm: str, file
             rows_meta.append((book, subject, statut, confiance))
 
     if not rows_meta:
-        documents.mark_processed(url_norm, file_hash, first.entreprise if first else None, None, "vide", origine)
+        # Aucun sujet extrait : probablement un échec du LLM. On ne mémorise PAS le document,
+        # pour qu'il soit retenté (avec un autre modèle ou un autre jour).
+        log.warning("Aucun sujet extrait de %s : document non mémorisé, à retenter.", source_url)
         return IngestResult("vide")
 
     rows = [rules.to_row(b, s, st, c, source_url, None) for b, s, st, c in rows_meta]
