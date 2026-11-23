@@ -26,6 +26,7 @@ class Settings(BaseSettings):
     google_cse_id: str = ""
     google_cse_key: str = ""
     max_pdfs_par_jour: int = 10
+    llm_block_chars: int = 20_000  # taille max d'un bloc envoyé au LLM (petits blocs = moins de 503)
     max_pages_par_pdf: int = 120
     max_pdf_bytes: int = 30 * 1024 * 1024
     agent_delai_secondes: float = 2.0

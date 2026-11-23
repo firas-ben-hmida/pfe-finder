@@ -14,9 +14,9 @@ from pfefinder.rag.embeddings import get_embeddings
 from pfefinder.rag.indexing.subject_text import subject_text
 from pfefinder.rag.ingestion import validation_rules as rules
 from pfefinder.rag.ingestion.pdf_loader import read_pdf
+from pfefinder.rag.ingestion.text_blocks import split_into_blocks
 
 log = logging.getLogger(__name__)
-CHUNK_CHARS = 60_000  # un catalogue long est découpé en blocs envoyés séparément au LLM
 
 
 @dataclass
@@ -27,10 +27,6 @@ class IngestResult:
     quarantaine: int = 0
     expires: int = 0
     entreprise: str | None = None
-
-
-def _blocks(text: str) -> list[str]:
-    return [text[i : i + CHUNK_CHARS] for i in range(0, len(text), CHUNK_CHARS)]
 
 
 def ingest_pdf(data: bytes, source_url: str, origine: str = "agent") -> IngestResult:
@@ -48,7 +44,7 @@ def ingest_pdf(data: bytes, source_url: str, origine: str = "agent") -> IngestRe
         return IngestResult("illisible")
 
     chain = extract_chain()
-    books = [chain.invoke({"text": block}) for block in _blocks(text)]
+    books = [chain.invoke({"text": block}) for block in split_into_blocks(text, settings.llm_block_chars)]
     rules.merge_book_metadata(books)  # entreprise, année, contact... se trouvent souvent dans un autre bloc
     first = books[0] if books else None
     rows_meta = []
