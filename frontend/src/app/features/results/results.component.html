@@ -1,20 +1,45 @@
 <a routerLink="/" class="back">← Changer de CV</a>
 <h1>Sujets qui te correspondent</h1>
 
-@if (results().length === 0) {
-  <p class="muted">Aucun sujet trouvé pour le moment.</p>
+@if (all().length === 0) {
+  <p class="muted">Aucun sujet ne correspond assez à ton CV pour le moment.</p>
+} @else {
+  <p class="muted summary">
+    <strong>{{ visible().length }}</strong> sujet{{ visible().length > 1 ? 's' : '' }} classé{{ visible().length > 1 ? 's' : '' }}
+    du plus au moins proche de ton CV.
+  </p>
+
+  <div class="filters" role="group" aria-label="Filtrer par entreprise">
+    <button type="button" class="chip" [class.active]="selectedCompany() === null" (click)="select(null)">
+      Toutes ({{ all().length }})
+    </button>
+    @for (c of companies(); track c.name) {
+      <button type="button" class="chip" [class.active]="selectedCompany() === c.name" (click)="select(c.name)">
+        {{ c.name }} ({{ c.count }})
+      </button>
+    }
+  </div>
 }
 
-@for (s of results(); track s.id) {
-  <article class="card">
-    <header>
-      <h2>{{ s.titre }}</h2>
-      <span class="muted">{{ s.entreprise }}{{ s.ville ? ' · ' + s.ville : '' }}{{ s.annee ? ' · ' + s.annee : '' }}</span>
-    </header>
+@for (s of visible(); track s.id) {
+  <article class="card offer" [class.top]="level(s) === 'top'">
+    <div class="meta">
+      <span class="company">{{ s.entreprise }}</span>
+      @if (s.ville) { <span class="pill">📍 {{ s.ville }}</span> }
+      @if (s.annee) { <span class="pill">{{ s.annee }}</span> }
+      <span class="level" [class.level-top]="level(s) === 'top'">{{ levelLabel(s) }}</span>
+    </div>
+
+    <h2>{{ s.titre }}</h2>
+
+    <div class="bar" aria-hidden="true"><span [style.width.%]="barWidth(s)"></span></div>
+
     @if (s.raison) {
-      <p class="reason">{{ s.raison }}</p>
+      <p class="reason"><strong>Pourquoi :</strong> {{ s.raison }}</p>
     }
-    <app-tag-list [tags]="s.technos" />
-    <a class="primary" [routerLink]="['/sujets', s.id]">Voir le détail</a>
+
+    <app-tag-list [tags]="techs(s)" />
+
+    <a class="primary" [routerLink]="['/sujets', s.id]">Voir le détail et postuler</a>
   </article>
 }
