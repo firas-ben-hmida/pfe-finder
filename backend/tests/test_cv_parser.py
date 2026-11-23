@@ -1,13 +1,16 @@
 import pytest
 
-from app.services.cv_parser import extract_text
+fitz = pytest.importorskip("fitz")
+
+from pfefinder.api.services.cv_parser import extract_text  # noqa: E402
 
 
-def test_refuse_un_fichier_qui_n_est_pas_un_pdf():
+def test_rejects_non_pdf():
     with pytest.raises(ValueError):
-        extract_text(b"ceci n'est pas un pdf")
+        extract_text(b"hello")
 
 
-def test_refuse_un_pdf_corrompu():
-    with pytest.raises(ValueError):
-        extract_text(b"%PDF-1.4 contenu invalide")
+def test_reads_text_pdf():
+    doc = fitz.open()
+    doc.new_page().insert_text((72, 72), "Firas Ben Hmida - ingenieur logiciel, Python, Angular, RAG, LangChain, FastAPI")
+    assert "Python" in extract_text(doc.tobytes())

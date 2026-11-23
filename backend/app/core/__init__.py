@@ -1,1 +1,0 @@
-"""Configuration et briques transverses."""

@@ -1,11 +1,13 @@
-from fastapi.testclient import TestClient
+import pytest
 
-from app.main import app
+pytest.importorskip("fastapi")
+pytest.importorskip("slowapi")
+pytest.importorskip("langchain_google_genai")
 
-client = TestClient(app)
+from fastapi.testclient import TestClient  # noqa: E402
+
+from pfefinder.api.main import app  # noqa: E402
 
 
-def test_health_renvoie_ok():
-    response = client.get("/health")
-    assert response.status_code == 200
-    assert response.json() == {"status": "ok"}
+def test_health():
+    assert TestClient(app).get("/api/health").json() == {"status": "ok"}

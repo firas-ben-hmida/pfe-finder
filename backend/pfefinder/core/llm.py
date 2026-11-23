@@ -1,0 +1,52 @@
+"""Modèles LangChain : LLM Gemini et embeddings Gemini (même modèle partout)."""
+from functools import lru_cache
+
+from google import genai
+from google.genai import types
+from langchain_core.embeddings import Embeddings
+from langchain_google_genai import ChatGoogleGenerativeAI
+
+from pfefinder.core.config import get_settings
+from pfefinder.core.errors import UpstreamError
+
+
+class GeminiEmbeddings(Embeddings):
+    """Adaptateur LangChain : RETRIEVAL_DOCUMENT pour indexer, RETRIEVAL_QUERY pour chercher."""
+
+    def __init__(self, api_key: str, model: str, dim: int, batch_size: int = 50):
+        self._client = genai.Client(api_key=api_key)
+        self._model = model
+        self._dim = dim
+        self._batch = batch_size
+
+    def _embed(self, texts: list[str], task_type: str) -> list[list[float]]:
+        vectors: list[list[float]] = []
+        try:
+            for i in range(0, len(texts), self._batch):
+                result = self._client.models.embed_content(
+                    model=self._model,
+                    contents=texts[i : i + self._batch],
+                    config=types.EmbedContentConfig(task_type=task_type, output_dimensionality=self._dim),
+                )
+                vectors.extend(list(e.values) for e in result.embeddings)
+        except Exception as exc:
+            raise UpstreamError("Échec de l'API d'embeddings.") from exc
+        return vectors
+
+    def embed_documents(self, texts: list[str]) -> list[list[float]]:
+        return self._embed(texts, "RETRIEVAL_DOCUMENT")
+
+    def embed_query(self, text: str) -> list[float]:
+        return self._embed([text], "RETRIEVAL_QUERY")[0]
+
+
+@lru_cache
+def get_embeddings() -> GeminiEmbeddings:
+    s = get_settings()
+    return GeminiEmbeddings(s.google_api_key, s.embedding_model, s.embedding_dim)
+
+
+@lru_cache
+def get_llm() -> ChatGoogleGenerativeAI:
+    s = get_settings()
+    return ChatGoogleGenerativeAI(model=s.llm_model, google_api_key=s.google_api_key, temperature=0, max_retries=3)
