@@ -11,7 +11,8 @@ from pfefinder.config.settings import get_settings
 @lru_cache
 def get_llm(model: str | None = None) -> ChatGoogleGenerativeAI:
     s = get_settings()
-    return ChatGoogleGenerativeAI(model=model or s.llm_model, google_api_key=s.google_api_key, temperature=0, max_retries=3)
+    return ChatGoogleGenerativeAI(model=model or s.llm_model, google_api_key=s.google_api_key, temperature=0,
+                                  max_retries=1, timeout=40)
 
 
 def get_local_llm() -> Runnable:
@@ -26,7 +27,7 @@ def get_local_llm() -> Runnable:
 def resilient(build: Callable[[Runnable], Runnable], allow_local: bool = True) -> Runnable:
     """Construit une chaîne par modèle (Gemini principal, secours, et Ollama si configuré).
 
-    Chaque chaîne réessaie 3 fois avant de passer au suivant : les 503 « forte demande »
+    Chaque appel est coupé après 40 s et réessayé une fois avant de passer au modèle suivant : les 503 « forte demande »
     du palier gratuit sont absorbés, et un LLM local peut prendre le relais sans quota
     (allow_local=False pour l'API web : un étudiant ne doit pas attendre un modèle local lent).
     """
@@ -35,5 +36,5 @@ def resilient(build: Callable[[Runnable], Runnable], allow_local: bool = True) -
     models: list[Runnable] = cloud
     if s.ollama_model and allow_local:
         models = [get_local_llm(), *cloud] if s.llm_prefer_local else [*cloud, get_local_llm()]
-    chains = [build(m).with_retry(stop_after_attempt=3, wait_exponential_jitter=True) for m in models]
+    chains = [build(m).with_retry(stop_after_attempt=2, wait_exponential_jitter=True) for m in models]
     return chains[0].with_fallbacks(chains[1:])
