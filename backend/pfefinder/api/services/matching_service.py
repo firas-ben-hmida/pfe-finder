@@ -15,6 +15,22 @@ def profile_query(profile: Profile) -> str:
     return "\n".join(p for p in parts if p)
 
 
+def diversify(docs: list, k: int, max_per_company: int = 3) -> list:
+    """Garde l'ordre de pertinence mais limite le nombre de sujets par entreprise,
+    pour que le classement ne soit pas monopolisé par un seul PFE book."""
+    counts: dict[str, int] = {}
+    picked = []
+    for d in docs:
+        company = d.metadata.get("entreprise") or ""
+        if counts.get(company, 0) >= max_per_company:
+            continue
+        counts[company] = counts.get(company, 0) + 1
+        picked.append(d)
+        if len(picked) == k:
+            break
+    return picked
+
+
 def extract_profile(cv_text: str) -> Profile:
     try:
         return profile_chain().invoke({"cv": cv_text})
@@ -29,7 +45,9 @@ def match(profile: Profile, cv_text: str = "") -> list[SubjectSummary]:
     query = profile_query(profile).strip() or cv_text[:4000].strip()  # profil vide : on cherche avec le texte du CV
     if not query:
         return []
-    docs = SubjectRetriever(top_k=get_settings().matching_top_k).invoke(query)
+    k = get_settings().matching_top_k
+    candidates = SubjectRetriever(top_k=k * 5).invoke(query)
+    docs = diversify(candidates, k)
     if not docs:
         return []
 
