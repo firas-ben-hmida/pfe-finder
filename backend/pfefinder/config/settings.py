@@ -13,6 +13,8 @@ class Settings(BaseSettings):
     google_api_key: str
 
     llm_model: str = "gemini-3.5-flash-lite"
+    # Modèles essayés dans l'ordre si le principal est surchargé (503) ou indisponible
+    llm_fallback_models: list[str] = ["gemini-3.5-flash", "gemini-3.7-flash"]
     embedding_model: str = "gemini-embedding-001"
     embedding_dim: int = 768
 
