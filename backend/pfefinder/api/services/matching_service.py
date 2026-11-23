@@ -16,24 +16,6 @@ def profile_query(profile: Profile) -> str:
     return "\n".join(p for p in parts if p)
 
 
-def diversify(docs: list, k: int, max_per_company: int | None = None) -> list:
-    """Garde l'ordre de pertinence mais limite le nombre de sujets par entreprise,
-    pour que le classement ne soit pas monopolisé par un seul PFE book."""
-    if max_per_company is None:
-        max_per_company = max(3, -(-k * 2 // 5))  # ~40 % de la liste : k=8 -> 4, k=30 -> 12
-    counts: dict[str, int] = {}
-    picked = []
-    for d in docs:
-        company = d.metadata.get("entreprise") or ""
-        if counts.get(company, 0) >= max_per_company:
-            continue
-        counts[company] = counts.get(company, 0) + 1
-        picked.append(d)
-        if len(picked) == k:
-            break
-    return picked
-
-
 def extract_profile(cv_text: str) -> Profile:
     start = time.perf_counter()
     try:
@@ -51,18 +33,19 @@ def match(profile: Profile, cv_text: str = "") -> list[SubjectSummary]:
     query = profile_query(profile).strip() or cv_text[:4000].strip()  # profil vide : on cherche avec le texte du CV
     if not query:
         return []
+    settings = get_settings()
     start = time.perf_counter()
-    k = get_settings().matching_top_k
-    candidates = SubjectRetriever(top_k=k * 5).invoke(query)
-    docs = diversify(candidates, k)
+    docs = [d for d in SubjectRetriever(top_k=settings.matching_top_k).invoke(query)
+            if (d.metadata.get("similarity") or 0) >= settings.matching_min_score]
     log.info("Recherche vectorielle : %d sujets en %.1f s", len(docs), time.perf_counter() - start)
     if not docs:
         return []
 
+    # Le LLM ne justifie que les sujets de tête : écrire 100 raisons prendrait plusieurs minutes.
     reasons: dict[int, str] = {}
     start = time.perf_counter()
     try:
-        listing = "\n\n".join(f"[id={d.metadata['id']}] {d.page_content}" for d in docs)
+        listing = "\n\n".join(f"[id={d.metadata['id']}] {d.page_content}" for d in docs[: settings.matching_reasons_count])
         result = reason_chain().invoke({"profile": profile.model_dump_json(), "subjects": listing})
         reasons = {r.id: r.raison for r in result.raisons}
         log.info("Raisons générées en %.1f s", time.perf_counter() - start)
@@ -70,7 +53,7 @@ def match(profile: Profile, cv_text: str = "") -> list[SubjectSummary]:
         log.warning("Raisons indisponibles après %.1f s : %s", time.perf_counter() - start, exc)  # la liste reste utile sans les justifications
 
     return [
-        SubjectSummary(**{k: d.metadata.get(k) for k in SubjectSummary.model_fields if k not in ("score", "raison")},
+        SubjectSummary(**{f: d.metadata.get(f) for f in SubjectSummary.model_fields if f not in ("score", "raison")},
                        score=d.metadata.get("similarity"), raison=reasons.get(d.metadata["id"]))
         for d in docs
     ]
