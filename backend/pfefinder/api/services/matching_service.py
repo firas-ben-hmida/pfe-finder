@@ -1,8 +1,12 @@
+import logging
+
 from pfefinder.rag.generation.matching_chains import profile_chain, reason_chain
 from pfefinder.config.settings import get_settings
-from pfefinder.common.errors import UpstreamError
 from pfefinder.rag.retrieval.subject_retriever import SubjectRetriever
 from pfefinder.domain.models import Profile, SubjectSummary
+
+
+log = logging.getLogger(__name__)
 
 
 def profile_query(profile: Profile) -> str:
@@ -15,7 +19,9 @@ def extract_profile(cv_text: str) -> Profile:
     try:
         return profile_chain().invoke({"cv": cv_text})
     except Exception as exc:
-        raise UpstreamError("Échec de l'analyse du CV.") from exc
+        # Mode dégradé : sans LLM, la recherche vectorielle utilise directement le texte du CV.
+        log.warning("Analyse du CV par le LLM indisponible, recherche sur le texte brut : %s", exc)
+        return Profile()
 
 
 def match(profile: Profile, cv_text: str = "") -> list[SubjectSummary]:

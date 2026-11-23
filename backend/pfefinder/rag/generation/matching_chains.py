@@ -18,9 +18,9 @@ class Reasons(BaseModel):
 
 def profile_chain():
     prompt = ChatPromptTemplate.from_messages([("system", prompts.PROFILE_SYSTEM), ("human", prompts.PROFILE_HUMAN)])
-    return resilient(lambda llm: prompt | llm.with_structured_output(Profile))
+    return resilient(lambda llm: prompt | llm.with_structured_output(Profile), allow_local=False)
 
 
 def reason_chain():
     prompt = ChatPromptTemplate.from_messages([("system", prompts.REASON_SYSTEM), ("human", prompts.REASON_HUMAN)])
-    return resilient(lambda llm: prompt | llm.with_structured_output(Reasons))
+    return resilient(lambda llm: prompt | llm.with_structured_output(Reasons), allow_local=False)

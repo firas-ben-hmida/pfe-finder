@@ -23,16 +23,17 @@ def get_local_llm() -> Runnable:
                       client_kwargs={"timeout": 900})
 
 
-def resilient(build: Callable[[Runnable], Runnable]) -> Runnable:
+def resilient(build: Callable[[Runnable], Runnable], allow_local: bool = True) -> Runnable:
     """Construit une chaîne par modèle (Gemini principal, secours, et Ollama si configuré).
 
     Chaque chaîne réessaie 3 fois avant de passer au suivant : les 503 « forte demande »
-    du palier gratuit sont absorbés, et un LLM local peut prendre le relais sans quota.
+    du palier gratuit sont absorbés, et un LLM local peut prendre le relais sans quota
+    (allow_local=False pour l'API web : un étudiant ne doit pas attendre un modèle local lent).
     """
     s = get_settings()
     cloud = [get_llm(m) for m in [s.llm_model, *[m for m in s.llm_fallback_models if m != s.llm_model]]]
     models: list[Runnable] = cloud
-    if s.ollama_model:
+    if s.ollama_model and allow_local:
         models = [get_local_llm(), *cloud] if s.llm_prefer_local else [*cloud, get_local_llm()]
     chains = [build(m).with_retry(stop_after_attempt=3, wait_exponential_jitter=True) for m in models]
     return chains[0].with_fallbacks(chains[1:])
