@@ -1,0 +1,5 @@
+{
+  "_commentaire": "Domaines vérifiés manuellement. L'agent n'ingère automatiquement que depuis cette liste ; le reste reste en attente de validation.",
+  "allowed": ["pfebooks.com"],
+  "blocked": ["linkedin.com", "facebook.com", "instagram.com", "x.com", "twitter.com", "tiktok.com"]
+}
