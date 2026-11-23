@@ -1,32 +1,24 @@
 import logging
 import time
 
-from pfefinder.rag.generation.matching_chains import profile_chain, reason_chain
-from pfefinder.config.settings import get_settings
-from pfefinder.rag.retrieval.subject_retriever import SubjectRetriever
-from pfefinder.domain.models import Profile, SubjectSummary
+from langchain_core.documents import Document
 
+from pfefinder.config.settings import get_settings
+from pfefinder.domain.models import Profile, SubjectSummary
+from pfefinder.rag.generation.matching_chains import profile_chain, rerank_chain
+from pfefinder.rag.retrieval import hybrid_ranking
+from pfefinder.rag.retrieval.subject_retriever import SubjectRetriever
+from pfefinder.repositories import subjects_repository as subjects_repo
 
 log = logging.getLogger(__name__)
+
+DESCRIPTION_CHARS = 700  # extrait de description transmis au LLM par sujet
 
 
 def profile_query(profile: Profile) -> str:
     """Texte de recherche construit à partir du profil (même espace que les sujets indexés)."""
     parts = [*profile.domaines, *profile.competences, *profile.projets[:3], *profile.experiences[:2]]
     return "\n".join(p for p in parts if p)
-
-
-def keep_relevant(docs: list, min_score: float, margin: float) -> list:
-    """Ne garde que les sujets qui correspondent au CV : score absolu suffisant ET proche du meilleur.
-
-    Les scores d'embeddings n'ont pas de valeur universelle : on mesure donc l'écart au meilleur sujet
-    plutôt que de fixer un seuil unique.
-    """
-    if not docs:
-        return []
-    scores = [d.metadata.get("similarity") or 0 for d in docs]
-    cutoff = max(min_score, max(scores) - margin)
-    return [d for d, s in zip(docs, scores) if s >= cutoff]
 
 
 def extract_profile(cv_text: str) -> Profile:
@@ -41,36 +33,79 @@ def extract_profile(cv_text: str) -> Profile:
         return Profile()
 
 
-def match(profile: Profile, cv_text: str = "") -> list[SubjectSummary]:
-    """RAG : retrieve (pgvector) puis le LLM justifie uniquement à partir des sujets récupérés."""
-    query = profile_query(profile).strip() or cv_text[:4000].strip()  # profil vide : on cherche avec le texte du CV
-    if not query:
-        return []
-    settings = get_settings()
-    start = time.perf_counter()
-    found = SubjectRetriever(top_k=settings.matching_top_k).invoke(query)
-    docs = keep_relevant(found, settings.matching_min_score, settings.matching_score_margin)
-    log.info("Recherche vectorielle : %d sujets pertinents sur %d en %.1f s", len(docs), len(found), time.perf_counter() - start)
-    for rank, d in list(enumerate(docs, 1))[:5] + list(enumerate(docs, 1))[-2:]:
-        log.info("  #%d  score=%.3f  %s | %s", rank, d.metadata.get("similarity") or 0,
-                 d.metadata.get("entreprise", "")[:12], d.metadata.get("titre", "")[:70])
-    log.info("Requête de recherche (%d car.) : %s", len(query), query[:300].replace("\n", " ; "))
+def filter_cities(docs: list[Document], cities: list[str] | None) -> list[Document]:
+    """Garde les sujets des villes choisies (et ceux dont la ville est inconnue). Aucune ville = toutes."""
+    wanted = {c.strip().lower() for c in cities or [] if c.strip()}
+    if not wanted:
+        return docs
+    return [d for d in docs if not d.metadata.get("ville") or d.metadata["ville"].strip().lower() in wanted]
+
+
+def keep_relevant(docs: list, min_score: float, margin: float) -> list:
+    """(Mode dégradé) garde les sujets dont le score est proche du meilleur."""
     if not docs:
         return []
+    scores = [d.metadata.get("similarity") or 0 for d in docs]
+    cutoff = max(min_score, max(scores) - margin)
+    return [d for d, s in zip(docs, scores) if s >= cutoff]
 
-    # Le LLM ne justifie que les sujets de tête : écrire 100 raisons prendrait plusieurs minutes.
-    reasons: dict[int, str] = {}
+
+def _listing(docs: list[Document]) -> str:
+    blocks = []
+    for d in docs:
+        m = d.metadata
+        technos = ", ".join(m.get("technos") or [])
+        blocks.append(f"[id={m['id']}] {m.get('titre', '')} ({m.get('entreprise', '')})\n"
+                      f"Technologies : {technos}\n{(m.get('description') or '')[:DESCRIPTION_CHARS]}")
+    return "\n\n".join(blocks)
+
+
+def _summary(doc: Document, score: float, reason: str | None) -> SubjectSummary:
+    fields = {f: doc.metadata.get(f) for f in SubjectSummary.model_fields if f not in ("score", "raison")}
+    return SubjectSummary(**fields, score=round(score, 3), raison=reason)
+
+
+def match(profile: Profile, cv_text: str = "", cities: list[str] | None = None) -> list[SubjectSummary]:
+    """RAG hybride : retrieve (pgvector) -> classement lexical+vectoriel -> le LLM note les meilleurs candidats.
+
+    Seuls les sujets réellement pertinents pour le CV sont renvoyés, du plus au moins pertinent.
+    """
+    settings = get_settings()
+    query = profile_query(profile).strip() or cv_text[:4000].strip()  # profil vide : texte brut du CV
+    if not query:
+        return []
+
+    start = time.perf_counter()
+    found = filter_cities(SubjectRetriever(top_k=settings.matching_candidates).invoke(query), cities)
+    if not found:
+        return []
+    texts = subjects_repo.descriptions([d.metadata["id"] for d in found])
+    for d in found:
+        d.metadata["description"] = texts.get(d.metadata["id"], "")
+        d.page_content = f"{d.page_content}\n{d.metadata['description']}"
+    terms = hybrid_ranking.profile_terms(profile.competences, profile.domaines)
+    ranked = hybrid_ranking.rank(found, terms)[: settings.matching_rerank_count]
+    log.info("Recherche hybride : %d candidats en %.1f s", len(ranked), time.perf_counter() - start)
+    for rank, (d, score) in enumerate(ranked[:5], 1):
+        log.info("  #%d  combiné=%.2f  %s | %s", rank, score, d.metadata.get("entreprise", "")[:12],
+                 d.metadata.get("titre", "")[:70])
+
     start = time.perf_counter()
     try:
-        listing = "\n\n".join(f"[id={d.metadata['id']}] {d.page_content}" for d in docs[: settings.matching_reasons_count])
-        result = reason_chain().invoke({"profile": profile.model_dump_json(), "subjects": listing})
-        reasons = {r.id: r.raison for r in result.raisons}
-        log.info("Raisons générées en %.1f s", time.perf_counter() - start)
+        result = rerank_chain().invoke({"profile": profile.model_dump_json(), "subjects": _listing([d for d, _ in ranked])})
+        judged = {j.id: j for j in result.sujets}
+        log.info("Notation par le LLM de %d sujets en %.1f s", len(judged), time.perf_counter() - start)
     except Exception as exc:
-        log.warning("Raisons indisponibles après %.1f s : %s", time.perf_counter() - start, exc)  # la liste reste utile sans les justifications
+        log.warning("Notation indisponible après %.1f s, classement hybride seul : %s", time.perf_counter() - start, exc)
+        judged = {}
 
-    return [
-        SubjectSummary(**{f: d.metadata.get(f) for f in SubjectSummary.model_fields if f not in ("score", "raison")},
-                       score=d.metadata.get("similarity"), raison=reasons.get(d.metadata["id"]))
-        for d in docs
-    ]
+    if judged:
+        kept = [(d, score, judged[d.metadata["id"]]) for d, score in ranked
+                if d.metadata["id"] in judged and judged[d.metadata["id"]].pertinence >= settings.matching_min_relevance]
+        kept.sort(key=lambda x: (x[2].pertinence, x[1]), reverse=True)
+        log.info("%d sujets pertinents (note >= %d) sur %d candidats", len(kept), settings.matching_min_relevance, len(ranked))
+        return [_summary(d, j.pertinence / 10, j.raison) for d, _, j in kept]
+
+    # Mode dégradé : pas de LLM, on garde les sujets proches du meilleur score hybride.
+    best = ranked[0][1]
+    return [_summary(d, score, None) for d, score in ranked if score >= best - 0.25]

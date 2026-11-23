@@ -15,6 +15,26 @@ def search(embedding: list[float], top_k: int) -> list[dict[str, Any]]:
         raise UpstreamError("Échec de la recherche vectorielle.") from exc
 
 
+def descriptions(ids: list[int]) -> dict[int, str]:
+    """Descriptions complètes des sujets (la recherche vectorielle ne renvoie que le résumé)."""
+    if not ids:
+        return {}
+    try:
+        rows = get_db().table("sujets").select("id,description").in_("id", ids).execute().data or []
+    except Exception as exc:
+        raise UpstreamError("Échec de la lecture des sujets.") from exc
+    return {r["id"]: r.get("description") or "" for r in rows}
+
+
+def active_cities() -> list[str]:
+    """Villes proposées dans les sujets actifs, triées."""
+    try:
+        rows = get_db().table("sujets").select("ville").eq("statut", "actif").limit(5000).execute().data or []
+    except Exception as exc:
+        raise UpstreamError("Échec de la lecture des villes.") from exc
+    return sorted({r["ville"] for r in rows if r.get("ville")})
+
+
 def get_active(subject_id: int) -> dict[str, Any] | None:
     try:
         rows = get_db().table("sujets").select("*").eq("id", subject_id).eq("statut", "actif").limit(1).execute().data

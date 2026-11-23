@@ -20,10 +20,11 @@ class Settings(BaseSettings):
 
     allowed_origins: list[str] = ["http://localhost:4200"]
     max_cv_bytes: int = 5 * 1024 * 1024
-    matching_top_k: int = 500        # plafond technique : en pratique, tous les sujets actifs
-    matching_min_score: float = 0.0   # similarité minimale absolue
-    matching_score_margin: float = 0.08  # on garde les sujets à moins de 0,08 du meilleur score
-    matching_reasons_count: int = 10  # nombre de sujets en tête pour lesquels le LLM écrit une raison
+    matching_candidates: int = 40       # sujets récupérés par la recherche vectorielle avant le classement hybride
+    matching_rerank_count: int = 25     # sujets soumis au jugement du LLM
+    matching_min_relevance: int = 6     # note LLM minimale (0-10) pour afficher un sujet
+    matching_min_score: float = 0.0     # (mode dégradé) similarité minimale absolue
+    matching_score_margin: float = 0.08  # (mode dégradé) écart maximal au meilleur score
 
     # Agent de découverte (Programmable Search Engine de Google)
     google_cse_id: str = ""

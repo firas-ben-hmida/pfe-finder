@@ -11,12 +11,16 @@ PROFILE_SYSTEM = (
 )
 PROFILE_HUMAN = "<cv>\n{cv}\n</cv>"
 
-REASON_SYSTEM = (
-    "Tu aides un étudiant à choisir un sujet de PFE. Pour chaque sujet proposé, écris UNE phrase "
-    "en français qui explique pourquoi il correspond au profil, en citant des éléments précis du profil "
-    "et du sujet. Utilise uniquement les données fournies. " + DATA_RULE
+RERANK_SYSTEM = (
+    "Tu es un conseiller de PFE exigeant. Tu compares le profil d'un étudiant à des sujets de stage. "
+    "Pour CHAQUE sujet, donne une note de pertinence entière de 0 à 10 et UNE phrase d'explication en français. "
+    "Barème : 9-10 = le domaine ET les technologies du sujet correspondent clairement aux compétences et projets du profil ; "
+    "6-8 = correspondance partielle mais crédible ; 3-5 = quelques technologies communes mais un domaine différent ; "
+    "0-2 = domaine sans rapport (par exemple mécanique, électronique, embarqué, réseaux) pour un profil logiciel. "
+    "Sois sévère : une technologie commune isolée ne suffit pas. "
+    "Appuie chaque phrase sur des éléments précis du profil et du sujet, sans rien inventer. " + DATA_RULE
 )
-REASON_HUMAN = "<profil>\n{profile}\n</profil>\n\n<sujets>\n{subjects}\n</sujets>"
+RERANK_HUMAN = "<profil>\n{profile}\n</profil>\n\n<sujets>\n{subjects}\n</sujets>"
 
 EXTRACT_SYSTEM = (
     "Tu extrais les sujets de PFE d'un catalogue d'entreprise. Règles : "
