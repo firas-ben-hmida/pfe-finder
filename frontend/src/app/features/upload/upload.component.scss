@@ -1,2 +1,9 @@
 .drop { display: block; border: 2px dashed #94a3b8; border-radius: 12px; padding: 2rem; text-align: center; cursor: pointer; margin: 1.5rem 0; }
 .drop.has-file { border-color: #2563eb; background: #eff6ff; }
+
+.cities { border: 0; padding: 0; margin: 0 0 1.25rem; }
+.cities legend { font-weight: 600; padding: 0; margin-bottom: 0.6rem; }
+.chip { border: 1px solid #cbd5e1; background: #fff; color: #334155; border-radius: 999px; padding: 0.3rem 0.95rem; margin: 0 0.5rem 0.5rem 0; font-size: 0.95rem; cursor: pointer; }
+.chip:hover { border-color: #2563eb; }
+.chip.active { background: #2563eb; border-color: #2563eb; color: #fff; }
+.hint { margin: 0.25rem 0 0; font-size: 0.85rem; }

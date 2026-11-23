@@ -7,6 +7,20 @@
     {{ file() ? file()!.name : 'Choisir un CV au format PDF (5 Mo max)' }}
   </label>
 
+  @if (cities().length > 0) {
+    <fieldset class="cities">
+      <legend>Où veux-tu faire ton PFE ? <span class="muted">(facultatif, plusieurs choix possibles)</span></legend>
+      @for (city of cities(); track city) {
+        <button type="button" class="chip" [class.active]="selectedCities().includes(city)" (click)="toggleCity(city)">
+          {{ city }}
+        </button>
+      }
+      @if (selectedCities().length === 0) {
+        <p class="muted hint">Aucune ville choisie : les sujets de toutes les villes sont proposés.</p>
+      }
+    </fieldset>
+  }
+
   @if (error()) {
     <p class="error">{{ error() }}</p>
   }

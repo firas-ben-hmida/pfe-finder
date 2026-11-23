@@ -47,16 +47,13 @@ export class ResultsComponent implements OnInit {
     this.selectedCompany.set(company);
   }
 
-  /** Position du sujet dans l'échelle des scores de cette recherche (0 à 1) : pertinence relative, pas un pourcentage. */
+  /** Note de pertinence du sujet (0 à 1) : la note sur 10 donnée par le LLM, ou le score hybride en mode dégradé. */
   strength(s: SubjectSummary): number {
-    const scores = this.all().map((x) => x.score ?? 0);
-    const hi = Math.max(...scores);
-    const lo = Math.min(...scores);
-    return hi === lo ? 1 : ((s.score ?? lo) - lo) / (hi - lo);
+    return Math.min(1, Math.max(0, s.score ?? 0));
   }
 
   level(s: SubjectSummary): Level {
-    return this.strength(s) >= 0.66 ? 'top' : 'good';
+    return this.strength(s) >= 0.8 ? 'top' : 'good';
   }
 
   levelLabel(s: SubjectSummary): string {
@@ -64,7 +61,7 @@ export class ResultsComponent implements OnInit {
   }
 
   barWidth(s: SubjectSummary): number {
-    return Math.round(35 + 65 * this.strength(s));
+    return Math.round(this.strength(s) * 100);
   }
 
   /** Nettoie les technologies : points finaux et libellés trop longs pour une pastille. */

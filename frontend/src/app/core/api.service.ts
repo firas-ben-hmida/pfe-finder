@@ -9,10 +9,15 @@ import { ApplyInfo, SubjectDetail, SubjectSummary } from './models';
 export class ApiService {
   private readonly http = inject(HttpClient);
 
-  matchCv(file: File): Observable<SubjectSummary[]> {
+  matchCv(file: File, cities: string[] = []): Observable<SubjectSummary[]> {
     const form = new FormData();
     form.append('file', file);
+    cities.forEach((city) => form.append('villes', city));
     return this.http.post<SubjectSummary[]>(`${API_URL}/match`, form);
+  }
+
+  getCities(): Observable<string[]> {
+    return this.http.get<string[]>(`${API_URL}/cities`);
   }
 
   getSubject(id: number): Observable<SubjectDetail> {
