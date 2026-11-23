@@ -43,3 +43,15 @@ def test_unknown_country_but_tunisian_city_is_active():
 
 def test_short_title_goes_to_quarantine():
     assert decide_status(book(), subj(titre="RAG"), TODAY)[0] == "quarantaine"
+
+
+def test_merge_book_metadata_spreads_info_across_blocks():
+    from pfefinder.rag.ingestion.validation_rules import merge_book_metadata
+
+    first = ExtractedBook(entreprise="Wevioo", annee=2027, sujets=[ExtractedSubject(titre="Sujet un assez long")])
+    second = ExtractedBook(contact_candidature="pfe@wevioo.com", mode_candidature="email",
+                           documents_requis=["CV"], sujets=[ExtractedSubject(titre="Sujet deux assez long")])
+    merge_book_metadata([first, second])
+    assert first.contact_candidature == "pfe@wevioo.com" and first.mode_candidature == "email"
+    assert second.entreprise == "Wevioo" and second.annee == 2027
+    assert first.documents_requis == ["CV"]

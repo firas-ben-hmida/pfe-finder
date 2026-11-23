@@ -48,15 +48,11 @@ def ingest_pdf(data: bytes, source_url: str, origine: str = "agent") -> IngestRe
         return IngestResult("illisible")
 
     chain = extract_chain()
-    first = None
+    books = [chain.invoke({"text": block}) for block in _blocks(text)]
+    rules.merge_book_metadata(books)  # entreprise, année, contact... se trouvent souvent dans un autre bloc
+    first = books[0] if books else None
     rows_meta = []
-    for block in _blocks(text):
-        book = chain.invoke({"text": block})
-        first = first or book
-        if book.entreprise is None and first.entreprise:
-            book.entreprise = first.entreprise
-        if book.annee is None:
-            book.annee = first.annee
+    for book in books:
         for subject in book.sujets:
             statut, confiance = rules.decide_status(book, subject)
             rows_meta.append((book, subject, statut, confiance))

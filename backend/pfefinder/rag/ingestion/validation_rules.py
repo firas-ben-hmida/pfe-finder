@@ -12,6 +12,24 @@ TUNISIAN_CITIES = {
     "la goulette", "carthage", "hammamet", "djerba", "gafsa", "tozeur", "beja", "béja", "jendouba",
 }
 MIN_TITLE = 8
+_BOOK_FIELDS = ("entreprise", "annee", "pays", "ville", "contact_candidature", "etapes_candidature", "date_limite")
+
+
+def merge_book_metadata(books: list[ExtractedBook]) -> None:
+    """Un PFE book long est extrait par blocs : les infos du catalogue (contact, étapes, date limite...)
+    ne sont souvent que dans un bloc. On les copie vers les blocs où elles manquent."""
+    for field in _BOOK_FIELDS:
+        value = next((getattr(b, field) for b in books if getattr(b, field)), None)
+        for b in books:
+            if not getattr(b, field):
+                setattr(b, field, value)
+    mode = next((b.mode_candidature for b in books if b.mode_candidature != "inconnu"), "inconnu")
+    docs = next((b.documents_requis for b in books if b.documents_requis), [])
+    for b in books:
+        if b.mode_candidature == "inconnu":
+            b.mode_candidature = mode
+        if not b.documents_requis:
+            b.documents_requis = list(docs)
 
 
 def is_tunisian(book: ExtractedBook, subject: ExtractedSubject) -> bool:
