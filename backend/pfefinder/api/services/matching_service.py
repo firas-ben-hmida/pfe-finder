@@ -16,6 +16,19 @@ def profile_query(profile: Profile) -> str:
     return "\n".join(p for p in parts if p)
 
 
+def keep_relevant(docs: list, min_score: float, margin: float) -> list:
+    """Ne garde que les sujets qui correspondent au CV : score absolu suffisant ET proche du meilleur.
+
+    Les scores d'embeddings n'ont pas de valeur universelle : on mesure donc l'écart au meilleur sujet
+    plutôt que de fixer un seuil unique.
+    """
+    if not docs:
+        return []
+    scores = [d.metadata.get("similarity") or 0 for d in docs]
+    cutoff = max(min_score, max(scores) - margin)
+    return [d for d, s in zip(docs, scores) if s >= cutoff]
+
+
 def extract_profile(cv_text: str) -> Profile:
     start = time.perf_counter()
     try:
@@ -35,9 +48,9 @@ def match(profile: Profile, cv_text: str = "") -> list[SubjectSummary]:
         return []
     settings = get_settings()
     start = time.perf_counter()
-    docs = [d for d in SubjectRetriever(top_k=settings.matching_top_k).invoke(query)
-            if (d.metadata.get("similarity") or 0) >= settings.matching_min_score]
-    log.info("Recherche vectorielle : %d sujets en %.1f s", len(docs), time.perf_counter() - start)
+    found = SubjectRetriever(top_k=settings.matching_top_k).invoke(query)
+    docs = keep_relevant(found, settings.matching_min_score, settings.matching_score_margin)
+    log.info("Recherche vectorielle : %d sujets pertinents sur %d en %.1f s", len(docs), len(found), time.perf_counter() - start)
     for rank, d in list(enumerate(docs, 1))[:5] + list(enumerate(docs, 1))[-2:]:
         log.info("  #%d  score=%.3f  %s | %s", rank, d.metadata.get("similarity") or 0,
                  d.metadata.get("entreprise", "")[:12], d.metadata.get("titre", "")[:70])
