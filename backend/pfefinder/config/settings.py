@@ -26,6 +26,10 @@ class Settings(BaseSettings):
     google_cse_id: str = ""
     google_cse_key: str = ""
     max_pdfs_par_jour: int = 10
+    # LLM local (Ollama). Vide = désactivé. Exemple : OLLAMA_MODEL=qwen2.5:3b
+    ollama_model: str = ""
+    ollama_base_url: str = "http://localhost:11434"
+    llm_prefer_local: bool = False  # True : Ollama d'abord, les API Gemini en secours
     llm_block_chars: int = 20_000  # taille max d'un bloc envoyé au LLM (petits blocs = moins de 503)
     max_pages_par_pdf: int = 120
     max_pdf_bytes: int = 30 * 1024 * 1024

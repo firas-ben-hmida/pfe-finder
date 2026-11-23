@@ -7,6 +7,7 @@ from dataclasses import dataclass
 
 from pfefinder.rag.ingestion.subject_extractor import extract_chain
 from pfefinder.config.settings import get_settings
+from pfefinder.domain.models import ExtractedBook
 from pfefinder.repositories import documents_repository as documents
 from pfefinder.repositories import subjects_repository as subjects
 from pfefinder.common.fingerprints import normalize_url, sha256_bytes
@@ -45,6 +46,12 @@ def ingest_pdf(data: bytes, source_url: str, origine: str = "agent") -> IngestRe
 
     chain = extract_chain()
     books = [chain.invoke({"text": block}) for block in split_into_blocks(text, settings.llm_block_chars)]
+    return store_books(books, source_url, url_norm, file_hash, origine)
+
+
+def store_books(books: list[ExtractedBook], source_url: str, url_norm: str, file_hash: str, origine: str) -> IngestResult:
+    """Étapes communes à toutes les sources (PDF lu par le LLM, ou JSON déjà structuré) :
+    fusion des métadonnées, règles de validation, embeddings, insertion, mémoire des documents traités."""
     rules.merge_book_metadata(books)  # entreprise, année, contact... se trouvent souvent dans un autre bloc
     first = books[0] if books else None
     rows_meta = []
