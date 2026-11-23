@@ -1,0 +1,52 @@
+<a class="back" (click)="back()" href="javascript:void(0)">← Retour aux résultats</a>
+
+@if (error()) {
+  <p class="error">{{ error() }}</p>
+}
+
+@if (subject(); as s) {
+  <article class="card">
+    <h1>{{ s.titre }}</h1>
+    <p class="muted">
+      {{ s.entreprise }}{{ s.ville ? ' · ' + s.ville : '' }}{{ s.annee ? ' · ' + s.annee : '' }}{{ s.numero ? ' · n° ' + s.numero : '' }}
+    </p>
+    <p class="description">{{ s.description || 'Aucune description disponible.' }}</p>
+    <app-tag-list [tags]="s.technos" />
+    @if (s.source_url) {
+      <p class="muted">
+        Source : <a [href]="s.source_url" target="_blank" rel="noopener noreferrer">catalogue de l'entreprise</a>
+        @if (s.page_source) { (page {{ s.page_source }}) }
+      </p>
+    }
+    <button class="primary" (click)="toggleApply()">
+      {{ apply() ? 'Masquer' : 'Comment postuler' }}
+    </button>
+  </article>
+
+  @if (apply(); as a) {
+    <article class="card">
+      <h2>Comment postuler</h2>
+      <p><strong>Mode :</strong> {{ modes[a.mode_candidature] }}</p>
+      @if (a.contact_candidature) {
+        <p><strong>Contact :</strong> {{ a.contact_candidature }}</p>
+      }
+      @if (a.documents_requis.length) {
+        <p><strong>Documents demandés :</strong></p>
+        <ul>
+          @for (d of a.documents_requis; track d) { <li>{{ d }}</li> }
+        </ul>
+      }
+      @if (a.etapes_candidature) {
+        <p><strong>Étapes :</strong> {{ a.etapes_candidature }}</p>
+      }
+      @if (a.date_limite) {
+        <p><strong>Date limite :</strong> {{ a.date_limite | date: 'dd/MM/yyyy' }}</p>
+      }
+      @if (a.mode_candidature === 'inconnu' && !a.contact_candidature) {
+        <p class="muted">La procédure n'est pas indiquée dans le catalogue : consulte la source.</p>
+      }
+    </article>
+  }
+} @else if (!error()) {
+  <p class="muted">Chargement…</p>
+}

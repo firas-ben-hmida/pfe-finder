@@ -8,31 +8,8 @@ import { MatchStateService } from '../../core/match-state.service';
 @Component({
   selector: 'app-upload',
   standalone: true,
-  template: `
-    <section class="card">
-      <h1>Trouve ton sujet de PFE en Tunisie</h1>
-      <p class="muted">Dépose ton CV (PDF). Il est analysé puis oublié : rien n'est enregistré.</p>
-
-      <label class="drop" [class.has-file]="file()">
-        <input type="file" accept="application/pdf" (change)="onFile($event)" hidden />
-        {{ file() ? file()!.name : 'Choisir un CV au format PDF (5 Mo max)' }}
-      </label>
-
-      @if (error()) {
-        <p class="error">{{ error() }}</p>
-      }
-
-      <button class="primary" [disabled]="!file() || loading()" (click)="submit()">
-        {{ loading() ? 'Analyse en cours…' : 'Voir les sujets' }}
-      </button>
-    </section>
-  `,
-  styles: [
-    `
-      .drop { display: block; border: 2px dashed #94a3b8; border-radius: 12px; padding: 2rem; text-align: center; cursor: pointer; margin: 1.5rem 0; }
-      .drop.has-file { border-color: #2563eb; background: #eff6ff; }
-    `,
-  ],
+  templateUrl: './upload.component.html',
+  styleUrl: './upload.component.scss',
 })
 export class UploadComponent {
   private readonly api = inject(ApiService);
