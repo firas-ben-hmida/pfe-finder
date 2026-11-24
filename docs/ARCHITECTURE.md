@@ -11,12 +11,14 @@
 | Embeddings | Gemini 768 dim, `RETRIEVAL_DOCUMENT` / `RETRIEVAL_QUERY` | `rag/embeddings.py` |
 | Indexation | Supabase + pgvector (hnsw, cosinus) | `repositories/subjects_repository.py`, `database/*.sql` |
 | Orchestration | un seul chemin d'écriture en base | `rag/ingestion/ingestion_pipeline.py` |
-| Retrieval | retriever LangChain -> fonction SQL `match_sujets` | `rag/retrieval/subject_retriever.py` |
-| Génération | profil du CV, puis justification limitée aux sujets récupérés | `rag/generation/matching_chains.py` |
+| Retrieval | multi-requêtes (profil, projets, expériences) -> fonction SQL `match_sujets`, + recherche par mots-clés | `rag/retrieval/subject_retriever.py`, `rag/retrieval/hybrid_ranking.py` |
+| Génération | profil du CV, puis note 0-10 et raison par sujet candidat (LLM) | `rag/generation/matching_chains.py` |
 
 ## Flux de matching
 
-CV PDF -> `cv_text_extractor` -> `profile_chain` (profil) -> requête vectorielle -> `SubjectRetriever` (top-k) -> `reason_chain` (une phrase par sujet) -> réponse JSON. Le CV n'est jamais stocké.
+CV PDF -> `cv_text_extractor` -> `profile_chain` (profil) -> requêtes (profil, chaque projet, chaque expérience) -> recherche vectorielle + recherche par mots-clés -> classement hybride (0,4 vecteur + 0,6 mots-clés) -> `rerank_chain` (note 0-10 + raison, seuil 6) -> réponse JSON. Si le LLM est indisponible, les 15 meilleurs du classement hybride sont affichés sans raison. Le CV n'est jamais stocké.
+
+LLM : Gemini d'abord, puis Groq en secours (`resilient` dans `rag/chat_model.py`) ; Ollama est réservé à l'extraction nocturne.
 
 ## Agent de découverte
 

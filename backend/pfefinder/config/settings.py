@@ -25,8 +25,6 @@ class Settings(BaseSettings):
     matching_rerank_batch: int = 30     # sujets par appel LLM : un seul appel pour ménager les quotas gratuits
     matching_fallback_count: int = 15   # sujets affichés quand le LLM est indisponible
     matching_min_relevance: int = 6     # note LLM minimale (0-10) pour afficher un sujet
-    matching_min_score: float = 0.0     # (mode dégradé) similarité minimale absolue
-    matching_score_margin: float = 0.08  # (mode dégradé) écart maximal au meilleur score
 
     # Agent de découverte (Programmable Search Engine de Google)
     google_cse_id: str = ""

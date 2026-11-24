@@ -5,8 +5,8 @@ Dépose ton CV, reçois les sujets de PFE tunisiens qui te correspondent, avec l
 ## Fonctionnement
 
 1. **Ingestion** : un PFE book (PDF) est lu, un LLM en extrait les sujets (JSON structuré), le code valide (Tunisie, année, date limite), puis chaque sujet est vectorisé (Gemini, 768 dim) et stocké dans Supabase (pgvector). Un chunk = un sujet.
-2. **Matching (RAG)** : le CV devient un profil, le profil devient une requête vectorielle, les sujets les plus proches sont récupérés, le LLM explique en une phrase pourquoi chacun convient (uniquement à partir des sujets récupérés).
-3. **Agent (LangGraph)** : chaque jour, il cherche de nouveaux PFE books et propose des sources ; le code vérifie (robots.txt, domaines autorisés, quotas) et ingère. Le doute va en quarantaine.
+2. **Matching (RAG)** : le CV (jamais stocké) devient un profil structuré. Les sujets candidats viennent de deux recherches complémentaires : vectorielle (le profil, chaque projet et chaque expérience, séparément) et par mots-clés sur tout le catalogue. Un classement hybride les ordonne, puis un LLM note chaque candidat de 0 à 10 avec une raison courte ; seuls les sujets notés 6 ou plus sont affichés. L'utilisateur peut filtrer par ville.
+3. **Agent (LangGraph)** : chaque nuit (GitHub Actions, Ollama pour l'extraction), il cherche de nouveaux PFE books et propose des sources ; le code vérifie (robots.txt, domaines autorisés, quotas) et ingère. Le doute va en quarantaine ; une source en échec reste en file pour le lendemain.
 
 ## Structure
 
@@ -16,7 +16,7 @@ Dépose ton CV, reçois les sujets de PFE tunisiens qui te correspondent, avec l
 | `backend/pfefinder/repositories` | accès à Supabase |
 | `backend/pfefinder/api` | API FastAPI (`/api/match`, `/api/subjects/{id}`, `/api/subjects/{id}/apply`) |
 | `backend/pfefinder/agent` | agent LangGraph, garde-fous, `domains.json` |
-| `backend/pfefinder/cli` | ingestion manuelle d'un PDF |
+| `backend/pfefinder/cli` | ingestion manuelle d'un PDF ou d'un JSON |
 | `database` | scripts SQL à exécuter dans l'ordre |
 | `frontend` | Angular (upload, résultats, détail) |
 

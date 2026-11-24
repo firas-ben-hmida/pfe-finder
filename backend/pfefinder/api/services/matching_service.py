@@ -42,15 +42,6 @@ def filter_cities(docs: list[Document], cities: list[str] | None) -> list[Docume
     return [d for d in docs if not d.metadata.get("ville") or d.metadata["ville"].strip().lower() in wanted]
 
 
-def keep_relevant(docs: list, min_score: float, margin: float) -> list:
-    """(Mode dégradé) garde les sujets dont le score est proche du meilleur."""
-    if not docs:
-        return []
-    scores = [d.metadata.get("similarity") or 0 for d in docs]
-    cutoff = max(min_score, max(scores) - margin)
-    return [d for d, s in zip(docs, scores) if s >= cutoff]
-
-
 def search_queries(profile: Profile, cv_text: str) -> list[str]:
     """Requêtes de recherche : le profil global, puis chaque projet et chaque expérience séparément."""
     general = profile_query(profile).strip() or cv_text[:4000].strip()
