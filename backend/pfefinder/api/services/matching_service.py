@@ -66,6 +66,8 @@ def gather_candidates(queries: list[str], terms: set[str], weights: dict[str, fl
     """
     docs: dict[int, Document] = {}
     vector_hits = SubjectRetriever(top_k=8).search_many(queries)  # 8 meilleurs sujets par requête
+    for q in queries:
+        log.info("Requête : %s", q[:90].replace("\n", " "))
     vector_hits.sort(key=lambda d: d.metadata.get("similarity") or 0, reverse=True)
     for d in vector_hits[:n]:
         full = rows.get(d.metadata["id"], {})
