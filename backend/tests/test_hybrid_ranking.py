@@ -42,3 +42,12 @@ def test_les_termes_rares_pesent_plus_que_les_termes_courants():
     assert weights["spring boot"] > weights["python"]
     docs = [_doc(text, sim=0.74) for text in catalogue]
     assert "Spring Boot" in hr.rank(docs, terms, weights)[0][0].page_content
+
+
+def test_un_terme_frequent_dans_le_cv_pese_plus():
+    terms = hr.profile_terms(["Spring Boot", "IA"], [])
+    cv = "Spring Boot microservices. Spring Boot Angular. Projet Spring Boot. Passionné par l'IA."
+    emphasis = hr.cv_emphasis(terms, cv)
+    assert emphasis["spring boot"] > emphasis["ia"]
+    combined = hr.combine_weights({"spring boot": 2.0, "ia": 2.0}, emphasis)
+    assert combined["spring boot"] > combined["ia"]

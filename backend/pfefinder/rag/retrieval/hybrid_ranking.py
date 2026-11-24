@@ -41,6 +41,27 @@ def term_weights(terms: set[str], catalogue_texts: list[str]) -> dict[str, float
     return weights
 
 
+def cv_emphasis(terms: set[str], cv_text: str) -> dict[str, float]:
+    """Importance d'un terme dans le CV : plus il revient (stages, projets, compétences), plus il compte.
+
+    Un mot cité une seule fois (« passionné par l'IA ») pèse moins que la stack réellement pratiquée.
+    """
+    text = normalize(cv_text)
+    return {t: 1.0 + math.log(1 + text.count(f" {t} ")) for t in terms}
+
+
+def combine_weights(*maps: dict[str, float]) -> dict[str, float]:
+    """Multiplie plusieurs pondérations terme par terme."""
+    keys = set().union(*maps) if maps else set()
+    out = {}
+    for k in keys:
+        value = 1.0
+        for m in maps:
+            value *= m.get(k, 1.0)
+        out[k] = value
+    return out
+
+
 def lexical_overlap(terms: set[str], haystack: str, weights: dict[str, float] | None = None) -> float:
     """Part (pondérée) des termes du profil retrouvés, en mots entiers, dans le texte du sujet."""
     if not terms:

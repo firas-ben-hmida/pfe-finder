@@ -110,7 +110,12 @@ def match(profile: Profile, cv_text: str = "", cities: list[str] | None = None) 
     start = time.perf_counter()
     terms = hybrid_ranking.profile_terms(profile.competences, profile.domaines)
     rows = {r["id"]: r for r in subjects_repo.active_subjects()}
-    weights = hybrid_ranking.term_weights(terms, [subject_text(r) for r in rows.values()])
+    weights = hybrid_ranking.combine_weights(
+        hybrid_ranking.term_weights(terms, [subject_text(r) for r in rows.values()]),  # rareté dans le catalogue
+        hybrid_ranking.cv_emphasis(terms, cv_text),                                     # importance dans le CV
+    )
+    top_terms = sorted(weights, key=weights.get, reverse=True)[:8]
+    log.info("Termes les plus déterminants : %s", ", ".join(top_terms))
     found = gather_candidates(query, terms, weights, rows, settings.matching_candidates)
     found = filter_cities(found, cities)
     if not found:
