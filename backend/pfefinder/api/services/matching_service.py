@@ -6,6 +6,7 @@ from langchain_core.documents import Document
 from pfefinder.config.settings import get_settings
 from pfefinder.domain.models import Profile, SubjectSummary
 from pfefinder.rag.generation.matching_chains import profile_chain, rerank_chain
+from pfefinder.rag.indexing.subject_text import subject_text
 from pfefinder.rag.retrieval import hybrid_ranking
 from pfefinder.rag.retrieval.subject_retriever import SubjectRetriever
 from pfefinder.repositories import subjects_repository as subjects_repo
@@ -50,6 +51,27 @@ def keep_relevant(docs: list, min_score: float, margin: float) -> list:
     return [d for d, s in zip(docs, scores) if s >= cutoff]
 
 
+def gather_candidates(query: str, terms: set[str], n: int) -> list[Document]:
+    """Candidats = meilleurs sujets par recherche vectorielle + meilleurs par mots-clés sur tout le catalogue.
+
+    Chaque méthode rattrape les oublis de l'autre (un sujet très proche du CV par ses technologies
+    peut avoir un embedding moyen, et inversement).
+    """
+    rows = {r["id"]: r for r in subjects_repo.active_subjects()}
+    docs: dict[int, Document] = {}
+    for d in SubjectRetriever(top_k=n).invoke(query):
+        full = rows.get(d.metadata["id"], {})
+        d.metadata["description"] = full.get("description") or ""
+        d.page_content = subject_text({**d.metadata, **full})
+        docs[d.metadata["id"]] = d
+    floor = min((d.metadata.get("similarity") or 0 for d in docs.values()), default=0.0)
+    by_keywords = sorted(rows.values(), key=lambda r: hybrid_ranking.lexical_overlap(terms, subject_text(r)), reverse=True)
+    for r in by_keywords[:n]:
+        if r["id"] not in docs and hybrid_ranking.lexical_overlap(terms, subject_text(r)) > 0:
+            docs[r["id"]] = Document(page_content=subject_text(r), metadata={**r, "similarity": floor})
+    return list(docs.values())
+
+
 def _listing(docs: list[Document]) -> str:
     blocks = []
     for d in docs:
@@ -76,14 +98,11 @@ def match(profile: Profile, cv_text: str = "", cities: list[str] | None = None) 
         return []
 
     start = time.perf_counter()
-    found = filter_cities(SubjectRetriever(top_k=settings.matching_candidates).invoke(query), cities)
+    terms = hybrid_ranking.profile_terms(profile.competences, profile.domaines)
+    found = gather_candidates(query, terms, settings.matching_candidates)
+    found = filter_cities(found, cities)
     if not found:
         return []
-    texts = subjects_repo.descriptions([d.metadata["id"] for d in found])
-    for d in found:
-        d.metadata["description"] = texts.get(d.metadata["id"], "")
-        d.page_content = f"{d.page_content}\n{d.metadata['description']}"
-    terms = hybrid_ranking.profile_terms(profile.competences, profile.domaines)
     ranked = hybrid_ranking.rank(found, terms)[: settings.matching_rerank_count]
     log.info("Recherche hybride : %d candidats en %.1f s", len(ranked), time.perf_counter() - start)
     for rank, (d, score) in enumerate(ranked[:5], 1):
@@ -95,6 +114,10 @@ def match(profile: Profile, cv_text: str = "", cities: list[str] | None = None) 
         result = rerank_chain().invoke({"profile": profile.model_dump_json(), "subjects": _listing([d for d, _ in ranked])})
         judged = {j.id: j for j in result.sujets}
         log.info("Notation par le LLM de %d sujets en %.1f s", len(judged), time.perf_counter() - start)
+        for d, _ in ranked:
+            j = judged.get(d.metadata["id"])
+            log.info("  note=%s  %s | %s", j.pertinence if j else "-", d.metadata.get("entreprise", "")[:10],
+                     d.metadata.get("titre", "")[:60])
     except Exception as exc:
         log.warning("Notation indisponible après %.1f s, classement hybride seul : %s", time.perf_counter() - start, exc)
         judged = {}
