@@ -51,3 +51,16 @@ def test_un_terme_frequent_dans_le_cv_pese_plus():
     assert emphasis["spring boot"] > emphasis["ia"]
     combined = hr.combine_weights({"spring boot": 2.0, "ia": 2.0}, emphasis)
     assert combined["spring boot"] > combined["ia"]
+
+
+def test_competences_agglutinees_sont_separees():
+    terms = hr.profile_terms(
+        ["Back-end : Spring Boot, Spring Cloud, FastAPI", "Front-end : Angular, React.js", "SonarQube / SonarCloud"],
+        ["génie logiciel"],
+    )
+    assert {"spring boot", "spring cloud", "fastapi", "angular", "sonarqube", "sonarcloud"} <= terms
+    assert all(len(t.split()) <= 4 for t in terms)
+
+
+def test_les_blocs_trop_longs_sont_ecartes():
+    assert hr.profile_terms(["un deux trois quatre cinq six sept"], []) == set()

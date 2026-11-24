@@ -21,8 +21,9 @@ class Settings(BaseSettings):
     allowed_origins: list[str] = ["http://localhost:4200"]
     max_cv_bytes: int = 5 * 1024 * 1024
     matching_candidates: int = 30       # candidats retenus par chaque méthode (vectorielle, mots-clés)
-    matching_rerank_count: int = 50     # plafond de sujets soumis au jugement du LLM
-    matching_rerank_batch: int = 25     # sujets par appel LLM : peu d'appels pour ménager le quota gratuit
+    matching_rerank_count: int = 30     # plafond de sujets soumis au jugement du LLM (limite de tokens par minute de Groq)
+    matching_rerank_batch: int = 30     # sujets par appel LLM : un seul appel pour ménager les quotas gratuits
+    matching_fallback_count: int = 15   # sujets affichés quand le LLM est indisponible
     matching_min_relevance: int = 6     # note LLM minimale (0-10) pour afficher un sujet
     matching_min_score: float = 0.0     # (mode dégradé) similarité minimale absolue
     matching_score_margin: float = 0.08  # (mode dégradé) écart maximal au meilleur score

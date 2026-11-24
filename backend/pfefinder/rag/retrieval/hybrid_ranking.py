@@ -21,9 +21,25 @@ def normalize(text: str) -> str:
     return " " + re.sub(r"[^a-z0-9+#]+", " ", ascii_only).strip() + " "
 
 
+_SPLIT = re.compile(r"[,;|·•\n]|\s/\s|\set\s")
+MAX_TERM_WORDS = 4
+
+
 def profile_terms(skills: list[str], domains: list[str]) -> set[str]:
-    terms = {normalize(t).strip() for t in [*skills, *domains]}
-    return {t for t in terms if len(t) >= 2}
+    """Termes de recherche tirés du profil.
+
+    Le LLM renvoie parfois une catégorie entière dans un seul élément (« Back-end : Spring Boot, FastAPI, … ») :
+    on retire l'étiquette avant « : », puis on sépare sur les virgules et les séparateurs courants.
+    Les termes trop longs (plus de 4 mots) ne correspondraient à aucun sujet et sont écartés.
+    """
+    terms: set[str] = set()
+    for item in [*skills, *domains]:
+        label_free = item.split(":", 1)[1] if ":" in item else item
+        for part in _SPLIT.split(label_free):
+            term = normalize(part).strip()
+            if len(term) >= 2 and len(term.split()) <= MAX_TERM_WORDS:
+                terms.add(term)
+    return terms
 
 
 def term_weights(terms: set[str], catalogue_texts: list[str]) -> dict[str, float]:

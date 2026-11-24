@@ -13,7 +13,7 @@ from pfefinder.repositories import subjects_repository as subjects_repo
 
 log = logging.getLogger(__name__)
 
-DESCRIPTION_CHARS = 500  # extrait de description transmis au LLM par sujet
+DESCRIPTION_CHARS = 220  # extrait de description transmis au LLM par sujet
 
 
 def profile_query(profile: Profile) -> str:
@@ -153,6 +153,5 @@ def match(profile: Profile, cv_text: str = "", cities: list[str] | None = None) 
         log.info("%d sujets pertinents (note >= %d) sur %d candidats", len(kept), settings.matching_min_relevance, len(ranked))
         return [_summary(d, j.pertinence / 10, j.raison) for d, _, j in kept]
 
-    # Mode dégradé : pas de LLM, on garde les sujets proches du meilleur score hybride.
-    best = ranked[0][1]
-    return [_summary(d, score, None) for d, score in ranked if score >= best - 0.25]
+    # Mode dégradé : pas de LLM, on affiche les meilleurs candidats du classement hybride (sans note ni raison).
+    return [_summary(d, score * 0.79, None) for d, score in ranked[: settings.matching_fallback_count]]

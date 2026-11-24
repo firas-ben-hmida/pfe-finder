@@ -14,7 +14,7 @@ PROFILE_HUMAN = "<cv>\n{cv}\n</cv>"
 RERANK_SYSTEM = (
     "Tu es un conseiller de PFE. Tu compares le profil d'un étudiant à des sujets de stage. "
     "Pour CHAQUE sujet, donne une note de pertinence entière de 0 à 10 et UNE phrase courte d'explication "
-    "en français (25 mots maximum). "
+    "en français (20 mots maximum). "
     "Ce qui compte le plus : (1) le domaine et le type de projet (architecture, microservices, DevOps, IA, etc.) "
     "et (2) la stack principale que l'étudiant pratique déjà dans ses projets et stages. "
     "Une technologie secondaire absente du CV (une base de données, un broker de messages, un outil précis) "
