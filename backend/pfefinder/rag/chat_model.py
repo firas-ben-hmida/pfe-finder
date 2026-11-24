@@ -20,7 +20,10 @@ def get_groq_llm() -> Runnable:
     from langchain_groq import ChatGroq
 
     s = get_settings()
-    return ChatGroq(model=s.groq_model, api_key=s.groq_api_key, temperature=0, max_retries=1, timeout=40)
+    extra = {"reasoning_effort": "low"} if "gpt-oss" in s.groq_model else {}  # moins de tokens de « réflexion »
+    # max_tokens : sans plafond suffisant la réponse JSON (30 sujets) est coupée en plein milieu.
+    return ChatGroq(model=s.groq_model, api_key=s.groq_api_key, temperature=0, max_retries=1, timeout=40,
+                    max_tokens=3000, model_kwargs=extra)
 
 
 def get_local_llm() -> Runnable:
