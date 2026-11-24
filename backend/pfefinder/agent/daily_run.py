@@ -48,15 +48,23 @@ def process_queue() -> None:
             log.warning("Source refusée (%s) : %s", url, exc)
             documents.set_source_status(source["id"], "refusee")
             continue
+        failed = False
         for pdf_url, data in pdfs:
             if budget <= 0:
+                failed = True  # PDF non traités faute de quota : la source reste en file
                 break
-            result = ingest_pdf(data, pdf_url)
+            try:
+                result = ingest_pdf(data, pdf_url)
+            except Exception as exc:  # quota, panne réseau… : on retentera demain, la source reste en file
+                log.warning("Échec d'ingestion de %s : %s", pdf_url, exc)
+                failed = True
+                continue
             if result.status != "deja_connu":
                 budget -= 1
             log.info("%s -> %s", pdf_url, result)
             time.sleep(settings.agent_delai_secondes)
-        documents.set_source_status(source["id"], "traitee")
+        if not failed:
+            documents.set_source_status(source["id"], "traitee")
 
 
 def main() -> None:

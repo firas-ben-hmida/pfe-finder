@@ -1,5 +1,6 @@
 """Embeddings Gemini (768 dimensions) : le même modèle indexe les sujets et encode les requêtes."""
 import logging
+import time
 from functools import lru_cache
 
 from google import genai
@@ -22,16 +23,31 @@ class GeminiEmbeddings(Embeddings):
         self._dim = dim
         self._batch = batch_size
 
+    def _embed_batch(self, texts: list[str], task_type: str, attempts: int = 4) -> list[list[float]]:
+        """Un lot ; en cas de quota par minute (429) on attend 20, 40, 60 s puis on réessaie."""
+        for attempt in range(1, attempts + 1):
+            try:
+                result = self._client.models.embed_content(
+                    model=self._model,
+                    contents=texts,
+                    config=types.EmbedContentConfig(task_type=task_type, output_dimensionality=self._dim),
+                )
+                return [list(e.values) for e in result.embeddings]
+            except Exception as exc:
+                quota = "429" in str(exc) or "RESOURCE_EXHAUSTED" in str(exc)
+                daily = "PerDay" in str(exc)
+                if not quota or daily or attempt == attempts:
+                    raise
+                pause = 20 * attempt
+                log.warning("Quota embeddings atteint, nouvelle tentative dans %d s", pause)
+                time.sleep(pause)
+        raise AssertionError("inatteignable")
+
     def _embed(self, texts: list[str], task_type: str) -> list[list[float]]:
         vectors: list[list[float]] = []
         try:
             for i in range(0, len(texts), self._batch):
-                result = self._client.models.embed_content(
-                    model=self._model,
-                    contents=texts[i : i + self._batch],
-                    config=types.EmbedContentConfig(task_type=task_type, output_dimensionality=self._dim),
-                )
-                vectors.extend(list(e.values) for e in result.embeddings)
+                vectors.extend(self._embed_batch(texts[i : i + self._batch], task_type))
         except Exception as exc:
             log.error("Échec embeddings (%d textes, %d caractères) : %s", len(texts), sum(map(len, texts)), exc)
             raise UpstreamError("Échec de l'API d'embeddings.") from exc

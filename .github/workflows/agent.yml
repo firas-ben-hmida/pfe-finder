@@ -2,9 +2,8 @@ name: agent
 
 on:
   workflow_dispatch:
-  # Décommenter quand le pipeline est validé en local (UTC) :
-  # schedule:
-  #   - cron: "30 5 * * *"
+  schedule:
+    - cron: "30 2 * * *"   # chaque nuit (UTC), hors des heures d'usage du site
 
 concurrency:
   group: agent
@@ -13,10 +12,13 @@ concurrency:
 jobs:
   run:
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 120   # l'extraction avec un modèle local sur CPU est lente
     defaults:
       run:
         working-directory: backend
+    env:
+      OLLAMA_MODEL: qwen2.5:7b
+      LLM_PREFER_LOCAL: "true"          # extraction des sujets : Ollama d'abord (aucun quota), API en secours
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -25,6 +27,21 @@ jobs:
           cache: pip
           cache-dependency-path: backend/requirements.txt
       - run: pip install -r requirements.txt
+
+      - name: Installer Ollama
+        run: curl -fsSL https://ollama.com/install.sh | sh
+        working-directory: .
+      - name: Cache du modèle
+        uses: actions/cache@v4
+        with:
+          path: ~/.ollama
+          key: ollama-${{ env.OLLAMA_MODEL }}
+      - name: Démarrer Ollama et charger le modèle
+        run: |
+          (ollama serve > /tmp/ollama.log 2>&1 &)
+          for i in $(seq 1 30); do curl -s localhost:11434 >/dev/null && break; sleep 2; done
+          ollama pull "$OLLAMA_MODEL"
+
       - run: python -m pfefinder.agent.daily_run
         env:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
@@ -32,3 +49,5 @@ jobs:
           GOOGLE_API_KEY: ${{ secrets.GOOGLE_API_KEY }}
           GOOGLE_CSE_ID: ${{ secrets.GOOGLE_CSE_ID }}
           GOOGLE_CSE_KEY: ${{ secrets.GOOGLE_CSE_KEY }}
+          GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
+          GROQ_MODEL: openai/gpt-oss-120b
