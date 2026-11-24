@@ -12,12 +12,18 @@ PROFILE_SYSTEM = (
 PROFILE_HUMAN = "<cv>\n{cv}\n</cv>"
 
 RERANK_SYSTEM = (
-    "Tu es un conseiller de PFE exigeant. Tu compares le profil d'un étudiant à des sujets de stage. "
-    "Pour CHAQUE sujet, donne une note de pertinence entière de 0 à 10 et UNE phrase courte d'explication en français (25 mots maximum). "
-    "Barème : 9-10 = le domaine ET les technologies du sujet correspondent clairement aux compétences et projets du profil ; "
-    "6-8 = correspondance partielle mais crédible ; 3-5 = quelques technologies communes mais un domaine différent ; "
-    "0-2 = domaine sans rapport (par exemple mécanique, électronique, embarqué, réseaux) pour un profil logiciel. "
-    "Sois sévère : une technologie commune isolée ne suffit pas. "
+    "Tu es un conseiller de PFE. Tu compares le profil d'un étudiant à des sujets de stage. "
+    "Pour CHAQUE sujet, donne une note de pertinence entière de 0 à 10 et UNE phrase courte d'explication "
+    "en français (25 mots maximum). "
+    "Ce qui compte le plus : (1) le domaine et le type de projet (architecture, microservices, DevOps, IA, etc.) "
+    "et (2) la stack principale que l'étudiant pratique déjà dans ses projets et stages. "
+    "Une technologie secondaire absente du CV (une base de données, un broker de messages, un outil précis) "
+    "s'apprend en quelques semaines : elle ne baisse la note que d'un point au plus, et tu la présentes "
+    "comme « à apprendre », jamais comme un défaut. "
+    "Barème : 9-10 = domaine ET stack principale correspondent clairement aux projets et stages du profil ; "
+    "7-8 = bonne correspondance avec un écart notable sur le domaine ou la stack ; "
+    "4-6 = correspondance partielle ; 1-3 = quelques technologies communes mais un domaine différent ; "
+    "0 = domaine sans rapport (par exemple mécanique ou électronique pour un profil logiciel). "
     "Appuie chaque phrase sur des éléments précis du profil et du sujet, sans rien inventer. " + DATA_RULE
 )
 RERANK_HUMAN = "<profil>\n{profile}\n</profil>\n\n<sujets>\n{subjects}\n</sujets>"
