@@ -1,4 +1,4 @@
-"""LLM de chat (Gemini via LangChain), avec nouvelles tentatives et modèles de secours."""
+"""LLM de chat (Gemini via LangChain), avec nouvelles tentatives et modèles de secours (Gemini, Groq, Ollama)."""
 from collections.abc import Callable
 from functools import lru_cache
 
@@ -13,6 +13,14 @@ def get_llm(model: str | None = None) -> ChatGoogleGenerativeAI:
     s = get_settings()
     return ChatGoogleGenerativeAI(model=model or s.llm_model, google_api_key=s.google_api_key, temperature=0,
                                   max_retries=1, timeout=40)
+
+
+def get_groq_llm() -> Runnable:
+    """LLM de secours hébergé par Groq (gratuit, quota large). Import tardif : paquet requis seulement si utilisé."""
+    from langchain_groq import ChatGroq
+
+    s = get_settings()
+    return ChatGroq(model=s.groq_model, api_key=s.groq_api_key, temperature=0, max_retries=1, timeout=40)
 
 
 def get_local_llm() -> Runnable:
@@ -33,6 +41,8 @@ def resilient(build: Callable[[Runnable], Runnable], allow_local: bool = True) -
     """
     s = get_settings()
     cloud = [get_llm(m) for m in [s.llm_model, *[m for m in s.llm_fallback_models if m != s.llm_model]]]
+    if s.groq_api_key:
+        cloud.append(get_groq_llm())  # dernier recours cloud, après les modèles Gemini
     models: list[Runnable] = cloud
     if s.ollama_model and allow_local:
         models = [get_local_llm(), *cloud] if s.llm_prefer_local else [*cloud, get_local_llm()]

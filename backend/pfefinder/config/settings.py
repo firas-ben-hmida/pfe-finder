@@ -32,6 +32,8 @@ class Settings(BaseSettings):
     google_cse_key: str = ""
     max_pdfs_par_jour: int = 10
     # LLM local (Ollama). Vide = désactivé. Exemple : OLLAMA_MODEL=qwen2.5:3b
+    groq_api_key: str = ""   # optionnel : LLM de secours quand Gemini est saturé ou sans quota
+    groq_model: str = "llama-3.3-70b-versatile"  # à vérifier dans la console Groq (les noms évoluent)
     ollama_model: str = ""
     ollama_base_url: str = "http://localhost:11434"
     llm_prefer_local: bool = False  # True : Ollama d'abord, les API Gemini en secours
