@@ -22,7 +22,7 @@ LLM : Gemini d'abord, puis Groq en secours (`resilient` dans `rag/chat_model.py`
 
 ## Agent de découverte
 
-`daily_run` : expiration des sujets périmés, puis `discovery_agent` (LangGraph) cherche et propose des sources, puis le code traite la file. L'agent ne peut pas écrire en base : `guardrails.py` (robots.txt, Content-Signal, domaines bloqués, liste blanche, taille, quotas) décide de tout.
+`daily_run` : expiration des sujets périmés, puis `discovery_agent` (LangGraph) explore les sites de confiance et propose des sources, puis le code traite la file. L'agent ne peut pas écrire en base : `guardrails.py` (robots.txt, Content-Signal, domaines bloqués, liste blanche, taille, quotas) décide de tout.
 
 ## Principes
 

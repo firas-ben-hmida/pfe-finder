@@ -39,3 +39,11 @@ def test_content_signal_blocks_ai_use():
 def test_find_pdf_links_same_domain_only():
     html = '<a href="/a.pdf">a</a><a href="https://autre.com/b.pdf">b</a><a href="c.html">c</a>'
     assert g.find_pdf_links(html, "https://s.tn/catalogue/") == ["https://s.tn/a.pdf"]
+
+
+def test_find_links_meme_domaine_et_pfe_en_premier():
+    html = ('<a href="/contact">Contact</a><a href="/catalogue-pfe-2027">Catalogue PFE 2027</a>'
+            '<a href="https://autre.com/x.pdf">ext</a><a href="https://linkedin.com/y">li</a>')
+    links = g.find_links(html, "https://s.tn/")
+    assert [l["url"] for l in links] == ["https://s.tn/catalogue-pfe-2027", "https://s.tn/contact"]
+    assert links[0]["texte"] == "Catalogue PFE 2027"

@@ -8,7 +8,7 @@ from pfefinder.config.settings import get_settings
 from pfefinder.repositories import documents_repository as documents
 
 _calls = {"search": 0}
-MAX_SEARCH_CALLS = 6
+MAX_SEARCH_CALLS = 15  # pages explorées par exécution
 MAX_SUBMISSIONS = 10
 _submitted: list[str] = []
 
@@ -19,27 +19,18 @@ def reset_quotas() -> None:
 
 
 @tool
-def search_pfe_books(query: str) -> list[dict]:
-    """Cherche des PFE books tunisiens sur le web (Google Programmable Search). Renvoie titre, url, extrait."""
-    s = get_settings()
+def explore_page(url: str) -> list[dict]:
+    """Ouvre une page d'un site de confiance et renvoie ses liens (url, texte). Sert à trouver les PFE books."""
     if _calls["search"] >= MAX_SEARCH_CALLS:
-        return [{"erreur": "Quota de recherches atteint pour cette exécution."}]
-    if not (s.google_cse_id and s.google_cse_key):
-        return [{"erreur": "Moteur de recherche non configuré."}]
+        return [{"erreur": "Quota de pages explorées atteint pour cette exécution."}]
+    if not g.is_allowed_for_auto_ingest(url):
+        return [{"erreur": "Domaine hors liste blanche : exploration refusée."}]
     _calls["search"] += 1
-    resp = requests.get(
-        "https://www.googleapis.com/customsearch/v1",
-        params={"key": s.google_cse_key, "cx": s.google_cse_id, "q": query, "num": 10},
-        timeout=20,
-    )
-    if resp.status_code != 200:
-        return [{"erreur": f"Recherche indisponible (HTTP {resp.status_code})."}]
-    results = []
-    for item in resp.json().get("items", []):
-        url = item.get("link", "")
-        if g.is_http_url(url) and not g.is_blocked(url):
-            results.append({"titre": item.get("title", ""), "url": url, "extrait": item.get("snippet", "")})
-    return results
+    try:
+        data, _ = g.safe_get(url, get_settings().max_pdf_bytes, g.HTML_TYPES)
+    except (g.GuardrailError, requests.RequestException) as exc:
+        return [{"erreur": f"Page inaccessible : {exc}"}]
+    return g.find_links(data.decode("utf-8", errors="ignore"), url)
 
 
 @tool

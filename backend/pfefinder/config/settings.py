@@ -27,8 +27,6 @@ class Settings(BaseSettings):
     matching_min_relevance: int = 6     # note LLM minimale (0-10) pour afficher un sujet
 
     # Agent de découverte (Programmable Search Engine de Google)
-    google_cse_id: str = ""
-    google_cse_key: str = ""
     max_pdfs_par_jour: int = 10
     # LLM local (Ollama). Vide = désactivé. Exemple : OLLAMA_MODEL=qwen2.5:3b
     groq_api_key: str = ""   # optionnel : LLM de secours quand Gemini est saturé ou sans quota

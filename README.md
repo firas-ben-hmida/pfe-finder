@@ -90,7 +90,6 @@ Variables d'environnement (`backend/.env`, modèle dans `.env.example`) :
 | `GOOGLE_API_KEY` | Gemini : LLM et embeddings |
 | `GROQ_API_KEY`, `GROQ_MODEL` | LLM de secours (optionnel, gratuit) |
 | `OLLAMA_MODEL`, `OLLAMA_BASE_URL`, `LLM_PREFER_LOCAL` | LLM local pour l'extraction nocturne |
-| `GOOGLE_CSE_ID`, `GOOGLE_CSE_KEY` | Recherche web de l'agent |
 | `MAX_PDFS_PAR_JOUR` | Quota quotidien d'ingestion (10 par défaut) |
 | `ALLOWED_ORIGINS` | Origines CORS autorisées |
 
@@ -106,7 +105,7 @@ Variables d'environnement (`backend/.env`, modèle dans `.env.example`) :
 
 ## Agent nocturne
 
-Le workflow [`.github/workflows/agent.yml`](.github/workflows/agent.yml) s'exécute chaque nuit : expiration des sujets périmés, découverte de sources, ingestion de la file (extraction par Ollama sur le runner, Groq et Gemini en secours). Il peut aussi être lancé à la main (`workflow_dispatch`) pour un test. Secrets GitHub requis : `SUPABASE_URL`, `SUPABASE_KEY`, `GOOGLE_API_KEY`, `GOOGLE_CSE_ID`, `GOOGLE_CSE_KEY`, `GROQ_API_KEY`.
+Le workflow [`.github/workflows/agent.yml`](.github/workflows/agent.yml) s'exécute chaque nuit : expiration des sujets périmés, exploration des sites de confiance (`seeds` de `domains.json`) pour trouver des PDF, ingestion de la file (extraction par Ollama sur le runner, Groq et Gemini en secours). Il peut aussi être lancé à la main (`workflow_dispatch`) pour un test. Secrets GitHub requis : `SUPABASE_URL`, `SUPABASE_KEY`, `GOOGLE_API_KEY`, `GROQ_API_KEY`.
 
 ## Qualité
 

@@ -1,5 +1,17 @@
 {
-  "_commentaire": "Domaines vérifiés manuellement. L'agent n'ingère automatiquement que depuis cette liste ; le reste reste en attente de validation.",
-  "allowed": ["pfebooks.com"],
-  "blocked": ["linkedin.com", "facebook.com", "instagram.com", "x.com", "twitter.com", "tiktok.com"]
+  "_commentaire": "Domaines vérifiés manuellement. L'agent n'ingère automatiquement que depuis cette liste ; le reste reste en attente de validation. 'seeds' : pages de départ explorées chaque nuit par l'agent.",
+  "allowed": [
+    "pfebooks.com"
+  ],
+  "blocked": [
+    "linkedin.com",
+    "facebook.com",
+    "instagram.com",
+    "x.com",
+    "twitter.com",
+    "tiktok.com"
+  ],
+  "seeds": [
+    "https://pfebooks.com/"
+  ]
 }

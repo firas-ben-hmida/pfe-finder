@@ -12,6 +12,7 @@ USER_AGENT = "PFEFinderBot/0.1 (projet étudiant; contact: voir README)"
 _DOMAINS = json.loads((Path(__file__).parent / "domains.json").read_text(encoding="utf-8"))
 ALLOWED_DOMAINS: set[str] = set(_DOMAINS["allowed"])
 BLOCKED_DOMAINS: set[str] = set(_DOMAINS["blocked"])
+SEED_URLS: list[str] = list(_DOMAINS.get("seeds", []))
 PDF_TYPES = {"application/pdf", "application/octet-stream"}
 HTML_TYPES = {"text/html", "application/xhtml+xml"}
 
@@ -130,3 +131,16 @@ def find_pdf_links(html: str, base_url: str, limit: int = 20) -> list[str]:
         if len(links) >= limit:
             break
     return links
+
+
+def find_links(html: str, base_url: str, limit: int = 60) -> list[dict]:
+    """Liens d'une page HTML (même domaine uniquement), avec leur texte. Ceux qui parlent de PFE passent en premier."""
+    found: dict[str, str] = {}
+    for href, label in re.findall(r'<a\s[^>]*?href=["\']([^"\'#]+)["\'][^>]*>(.*?)</a>', html, flags=re.IGNORECASE | re.DOTALL):
+        absolute = urljoin(base_url, href.strip())
+        if not is_http_url(absolute) or is_blocked(absolute) or host_of(absolute) != host_of(base_url):
+            continue
+        text = re.sub(r"<[^>]+>", " ", label)
+        found.setdefault(absolute, " ".join(text.split())[:80])
+    ranked = sorted(found.items(), key=lambda kv: not re.search(r"pfe|stage|catalogue|book|\.pdf", kv[0] + kv[1], re.IGNORECASE))
+    return [{"url": u, "texte": txt} for u, txt in ranked[:limit]]
