@@ -4,6 +4,7 @@ L'embedding capte le sens général mais ses scores sont très serrés d'un suje
 Le recoupement des compétences du profil avec les technologies et le texte du sujet
 départage mieux les sujets proches (ex. Java/Spring Boot vs systèmes embarqués).
 """
+import math
 import re
 import unicodedata
 
@@ -25,20 +26,39 @@ def profile_terms(skills: list[str], domains: list[str]) -> set[str]:
     return {t for t in terms if len(t) >= 2}
 
 
-def lexical_overlap(terms: set[str], haystack: str) -> float:
-    """Part des termes du profil retrouvés (mots entiers) dans le texte du sujet."""
+def term_weights(terms: set[str], catalogue_texts: list[str]) -> dict[str, float]:
+    """Poids de chaque terme du profil selon sa rareté dans le catalogue (IDF).
+
+    « spring boot » (rare) discrimine bien ; « ia » ou « python » (présents dans presque tous
+    les sujets) comptent beaucoup moins.
+    """
+    normalized = [normalize(x) for x in catalogue_texts]
+    n = len(normalized)
+    weights = {}
+    for term in terms:
+        df = sum(1 for text in normalized if f" {term} " in text)
+        weights[term] = math.log((n + 1) / (df + 1)) + 0.1
+    return weights
+
+
+def lexical_overlap(terms: set[str], haystack: str, weights: dict[str, float] | None = None) -> float:
+    """Part (pondérée) des termes du profil retrouvés, en mots entiers, dans le texte du sujet."""
     if not terms:
         return 0.0
     text = normalize(haystack)
-    return sum(1 for t in terms if f" {t} " in text) / len(terms)
+    w = weights or {}
+    total = sum(w.get(t, 1.0) for t in terms)
+    found = sum(w.get(t, 1.0) for t in terms if f" {t} " in text)
+    return found / total if total else 0.0
 
 
-def rank(docs: list[Document], terms: set[str]) -> list[tuple[Document, float]]:
+def rank(docs: list[Document], terms: set[str],
+         weights: dict[str, float] | None = None) -> list[tuple[Document, float]]:
     """Retourne (document, score combiné 0..1) trié du meilleur au moins bon."""
     if not docs:
         return []
     sims = [d.metadata.get("similarity") or 0.0 for d in docs]
-    lexical = [lexical_overlap(terms, d.page_content) for d in docs]
+    lexical = [lexical_overlap(terms, d.page_content, weights) for d in docs]
     lo, hi = min(sims), max(sims)
     max_lex = max(lexical)
     scored = []

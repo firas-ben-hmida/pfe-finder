@@ -33,3 +33,12 @@ def test_filtre_villes():
     docs = [_doc("a", 0.5, "Tunis"), _doc("b", 0.5, "Sfax"), _doc("c", 0.5, None)]
     assert [d.page_content for d in filter_cities(docs, ["sfax"])] == ["b", "c"]
     assert len(filter_cities(docs, None)) == 3
+
+
+def test_les_termes_rares_pesent_plus_que_les_termes_courants():
+    catalogue = ["agents IA Python LLM"] * 8 + ["Java Spring Boot microservices"] + ["bootloader STM32"]
+    terms = hr.profile_terms(["Java", "Spring Boot", "microservices", "Python"], ["IA", "LLM"])
+    weights = hr.term_weights(terms, catalogue)
+    assert weights["spring boot"] > weights["python"]
+    docs = [_doc(text, sim=0.74) for text in catalogue]
+    assert "Spring Boot" in hr.rank(docs, terms, weights)[0][0].page_content

@@ -13,7 +13,7 @@ from pfefinder.repositories import subjects_repository as subjects_repo
 
 log = logging.getLogger(__name__)
 
-DESCRIPTION_CHARS = 700  # extrait de description transmis au LLM par sujet
+DESCRIPTION_CHARS = 500  # extrait de description transmis au LLM par sujet
 
 
 def profile_query(profile: Profile) -> str:
@@ -51,13 +51,13 @@ def keep_relevant(docs: list, min_score: float, margin: float) -> list:
     return [d for d, s in zip(docs, scores) if s >= cutoff]
 
 
-def gather_candidates(query: str, terms: set[str], n: int) -> list[Document]:
+def gather_candidates(query: str, terms: set[str], weights: dict[str, float],
+                      rows: dict[int, dict], n: int) -> list[Document]:
     """Candidats = meilleurs sujets par recherche vectorielle + meilleurs par mots-clés sur tout le catalogue.
 
     Chaque méthode rattrape les oublis de l'autre (un sujet très proche du CV par ses technologies
     peut avoir un embedding moyen, et inversement).
     """
-    rows = {r["id"]: r for r in subjects_repo.active_subjects()}
     docs: dict[int, Document] = {}
     for d in SubjectRetriever(top_k=n).invoke(query):
         full = rows.get(d.metadata["id"], {})
@@ -65,11 +65,21 @@ def gather_candidates(query: str, terms: set[str], n: int) -> list[Document]:
         d.page_content = subject_text({**d.metadata, **full})
         docs[d.metadata["id"]] = d
     floor = min((d.metadata.get("similarity") or 0 for d in docs.values()), default=0.0)
-    by_keywords = sorted(rows.values(), key=lambda r: hybrid_ranking.lexical_overlap(terms, subject_text(r)), reverse=True)
-    for r in by_keywords[:n]:
-        if r["id"] not in docs and hybrid_ranking.lexical_overlap(terms, subject_text(r)) > 0:
+    scored = sorted(((hybrid_ranking.lexical_overlap(terms, subject_text(r), weights), r) for r in rows.values()),
+                    key=lambda x: x[0], reverse=True)
+    for score, r in scored[:n]:
+        if score > 0 and r["id"] not in docs:
             docs[r["id"]] = Document(page_content=subject_text(r), metadata={**r, "similarity": floor})
     return list(docs.values())
+
+
+def judge(profile: Profile, docs: list[Document], batch: int) -> dict:
+    """Fait noter les candidats par le LLM, par lots appelés en parallèle (plus rapide qu'un seul gros appel)."""
+    chain = rerank_chain()
+    payloads = [{"profile": profile.model_dump_json(), "subjects": _listing(docs[i:i + batch])}
+                for i in range(0, len(docs), batch)]
+    results = chain.batch(payloads, config={"max_concurrency": 4})
+    return {j.id: j for r in results for j in r.sujets}
 
 
 def _listing(docs: list[Document]) -> str:
@@ -99,11 +109,13 @@ def match(profile: Profile, cv_text: str = "", cities: list[str] | None = None) 
 
     start = time.perf_counter()
     terms = hybrid_ranking.profile_terms(profile.competences, profile.domaines)
-    found = gather_candidates(query, terms, settings.matching_candidates)
+    rows = {r["id"]: r for r in subjects_repo.active_subjects()}
+    weights = hybrid_ranking.term_weights(terms, [subject_text(r) for r in rows.values()])
+    found = gather_candidates(query, terms, weights, rows, settings.matching_candidates)
     found = filter_cities(found, cities)
     if not found:
         return []
-    ranked = hybrid_ranking.rank(found, terms)[: settings.matching_rerank_count]
+    ranked = hybrid_ranking.rank(found, terms, weights)[: settings.matching_rerank_count]
     log.info("Recherche hybride : %d candidats en %.1f s", len(ranked), time.perf_counter() - start)
     for rank, (d, score) in enumerate(ranked[:5], 1):
         log.info("  #%d  combiné=%.2f  %s | %s", rank, score, d.metadata.get("entreprise", "")[:12],
@@ -111,8 +123,7 @@ def match(profile: Profile, cv_text: str = "", cities: list[str] | None = None) 
 
     start = time.perf_counter()
     try:
-        result = rerank_chain().invoke({"profile": profile.model_dump_json(), "subjects": _listing([d for d, _ in ranked])})
-        judged = {j.id: j for j in result.sujets}
+        judged = judge(profile, [d for d, _ in ranked], settings.matching_rerank_batch)
         log.info("Notation par le LLM de %d sujets en %.1f s", len(judged), time.perf_counter() - start)
         for d, _ in ranked:
             j = judged.get(d.metadata["id"])
