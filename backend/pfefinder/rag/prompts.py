@@ -13,7 +13,7 @@ PROFILE_HUMAN = "<cv>\n{cv}\n</cv>"
 
 RERANK_SYSTEM = (
     "Tu es un conseiller de PFE exigeant. Tu compares le profil d'un étudiant à des sujets de stage. "
-    "Pour CHAQUE sujet, donne une note de pertinence entière de 0 à 10 et UNE phrase d'explication en français. "
+    "Pour CHAQUE sujet, donne une note de pertinence entière de 0 à 10 et UNE phrase courte d'explication en français (25 mots maximum). "
     "Barème : 9-10 = le domaine ET les technologies du sujet correspondent clairement aux compétences et projets du profil ; "
     "6-8 = correspondance partielle mais crédible ; 3-5 = quelques technologies communes mais un domaine différent ; "
     "0-2 = domaine sans rapport (par exemple mécanique, électronique, embarqué, réseaux) pour un profil logiciel. "

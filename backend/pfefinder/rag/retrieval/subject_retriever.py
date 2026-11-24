@@ -17,3 +17,18 @@ class SubjectRetriever(BaseRetriever):
     def _get_relevant_documents(self, query: str, *, run_manager: CallbackManagerForRetrieverRun) -> list[Document]:
         rows = subjects_repo.search(get_embeddings().embed_query(query), self.top_k)
         return [Document(page_content=subject_text(r), metadata=r) for r in rows]
+
+    def search_many(self, queries: list[str]) -> list[Document]:
+        """Multi-query retrieval : une recherche par requête (profil global, chaque projet, chaque expérience).
+
+        Un CV mélange plusieurs sujets ; une requête unique en fait la moyenne et noie la spécialité.
+        Chaque sujet garde sa meilleure similarité parmi toutes les requêtes.
+        """
+        queries = [q for q in queries if q.strip()]
+        best: dict[int, Document] = {}
+        for vector in get_embeddings().embed_queries(queries):
+            for row in subjects_repo.search(vector, self.top_k):
+                known = best.get(row["id"])
+                if known is None or row["similarity"] > known.metadata["similarity"]:
+                    best[row["id"]] = Document(page_content=subject_text(row), metadata=row)
+        return list(best.values())

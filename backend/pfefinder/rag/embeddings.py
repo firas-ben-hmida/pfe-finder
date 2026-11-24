@@ -40,6 +40,10 @@ class GeminiEmbeddings(Embeddings):
     def embed_documents(self, texts: list[str]) -> list[list[float]]:
         return self._embed(texts, "RETRIEVAL_DOCUMENT")
 
+    def embed_queries(self, texts: list[str]) -> list[list[float]]:
+        """Plusieurs requêtes de recherche en un seul appel API."""
+        return self._embed(texts, "RETRIEVAL_QUERY")
+
     def embed_query(self, text: str) -> list[float]:
         return self._embed([text], "RETRIEVAL_QUERY")[0]
 

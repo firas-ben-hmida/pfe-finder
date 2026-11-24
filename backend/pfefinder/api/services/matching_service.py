@@ -51,7 +51,13 @@ def keep_relevant(docs: list, min_score: float, margin: float) -> list:
     return [d for d, s in zip(docs, scores) if s >= cutoff]
 
 
-def gather_candidates(query: str, terms: set[str], weights: dict[str, float],
+def search_queries(profile: Profile, cv_text: str) -> list[str]:
+    """Requêtes de recherche : le profil global, puis chaque projet et chaque expérience séparément."""
+    general = profile_query(profile).strip() or cv_text[:4000].strip()
+    return [general, *profile.projets[:6], *profile.experiences[:4]]
+
+
+def gather_candidates(queries: list[str], terms: set[str], weights: dict[str, float],
                       rows: dict[int, dict], n: int) -> list[Document]:
     """Candidats = meilleurs sujets par recherche vectorielle + meilleurs par mots-clés sur tout le catalogue.
 
@@ -59,7 +65,9 @@ def gather_candidates(query: str, terms: set[str], weights: dict[str, float],
     peut avoir un embedding moyen, et inversement).
     """
     docs: dict[int, Document] = {}
-    for d in SubjectRetriever(top_k=n).invoke(query):
+    vector_hits = SubjectRetriever(top_k=8).search_many(queries)  # 8 meilleurs sujets par requête
+    vector_hits.sort(key=lambda d: d.metadata.get("similarity") or 0, reverse=True)
+    for d in vector_hits[:n]:
         full = rows.get(d.metadata["id"], {})
         d.metadata["description"] = full.get("description") or ""
         d.page_content = subject_text({**d.metadata, **full})
@@ -116,7 +124,7 @@ def match(profile: Profile, cv_text: str = "", cities: list[str] | None = None) 
     )
     top_terms = sorted(weights, key=weights.get, reverse=True)[:8]
     log.info("Termes les plus déterminants : %s", ", ".join(top_terms))
-    found = gather_candidates(query, terms, weights, rows, settings.matching_candidates)
+    found = gather_candidates(search_queries(profile, cv_text), terms, weights, rows, settings.matching_candidates)
     found = filter_cities(found, cities)
     if not found:
         return []
